@@ -1,7 +1,7 @@
 name: overlay_popup_dialog
 description: Overlay Popup Dialog for Android, iOS, Web, Desktop and Linux. It is highly customizable and easy to use popup dialog for Flutter.
 version: 0.0.1
-homepage:
+homepage: https://github.com/metekaganmusaak/overlay_popup_dialog
 
 environment:
   sdk: ^3.5.4
