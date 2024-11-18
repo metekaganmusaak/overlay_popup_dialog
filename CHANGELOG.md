@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.3
+
+* Web playground link added in README file.
+
 ## 0.0.2
 
 * README changes.
