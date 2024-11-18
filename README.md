@@ -1,6 +1,6 @@
 # Overlay Popup Dialog Widget
-The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, or on top of it.
 
+The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, or on top of it.
 
 ![OverlayPopupDialogWidget](https://github.com/user-attachments/assets/1db05766-d025-46c3-bf72-8ad1c8a9f025)
 
@@ -274,7 +274,7 @@ class ContainerWidget extends StatelessWidget {
 ```
 
 Also you can check whole example code here:
-[https://github.com/metekaganmusaak/onboarding_view/blob/main/example/lib/main.dart](https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart)
+[https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart](https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart)
 
 ## Additional information
 
