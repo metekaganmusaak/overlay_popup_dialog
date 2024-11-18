@@ -15,8 +15,7 @@ class OverlayPopupDialog extends StatefulWidget {
     required this.dialogChild,
     this.overlayLocation = OverlayLocation.bottom,
     this.barrierDismissible = true,
-    this.popupDialogTheme = const PopupDialogTheme(),
-    this.showCloseIcon = true,
+    this.popupDialogTheme,
   });
 
   /// This widget is tappable widget that will trigger the overlay
@@ -35,9 +34,6 @@ class OverlayPopupDialog extends StatefulWidget {
 
   /// Theme for the overlay popup dialog.
   final PopupDialogTheme? popupDialogTheme;
-
-  /// If true, close icon will be shown on the right side of the dialog.
-  final bool showCloseIcon;
 
   @override
   State<OverlayPopupDialog> createState() => _OverlayPopupDialogState();
@@ -131,57 +127,36 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                     // Position of the dialog widget.
                     top: switch (widget.overlayLocation) {
                       OverlayLocation.top => childPosition.dy -
-                          childSize.height -
+                          (widget.popupDialogTheme?.height ?? kToolbarHeight) +
                           _slideAnimation.value,
                       OverlayLocation.on => childPosition.dy +
+                          (kToolbarHeight / 2) -
+                          ((widget.popupDialogTheme?.height ?? kToolbarHeight) /
+                              2) -
                           (childSize.height / 2) -
-                          (kToolbarHeight / 2) +
                           _slideAnimation.value,
                       OverlayLocation.bottom => childPosition.dy +
                           childSize.height +
                           _slideAnimation.value,
                     },
-                    left: 0, // From left edge of the screen
-                    right: 0, // To right edge of the screen
+                    // From left edge of the screen
+                    left: widget.popupDialogTheme?.leftMargin ?? 0,
+                    // To right edge of the screen
+                    right: widget.popupDialogTheme?.rightMargin ?? 0,
                     child: Opacity(
                       opacity: _fadeAnimation.value,
-                      child: Column(
-                        children: [
-                          Container(
-                            height: widget.popupDialogTheme?.height,
-                            padding: widget.popupDialogTheme?.padding,
-                            width: double.infinity,
-                            decoration: widget.popupDialogTheme?.decoration ??
-                                BoxDecoration(
-                                  color:
-                                      Theme.of(context).scaffoldBackgroundColor,
-                                ),
-                            child: IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Expanded(child: widget.dialogChild),
-                                  if (widget.showCloseIcon) ...[
-                                    const VerticalDivider(),
-                                    IconButton(
-                                      onPressed: () {
-                                        _removeOverlay();
-                                      },
-                                      icon: Icon(
-                                        widget.popupDialogTheme?.closeIcon ??
-                                            Icons.close,
-                                        color: widget.popupDialogTheme
-                                                ?.closeIconColor ??
-                                            Theme.of(context).iconTheme.color,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                      child: Container(
+                        height: widget.popupDialogTheme?.height,
+                        width: double.infinity,
+                        decoration: widget.popupDialogTheme?.decoration ??
+                            BoxDecoration(
+                              color: Theme.of(context).scaffoldBackgroundColor,
                             ),
-                          ),
-                        ],
+                        child: Padding(
+                          padding: widget.popupDialogTheme?.padding ??
+                              EdgeInsets.zero,
+                          child: widget.dialogChild,
+                        ),
                       ),
                     ),
                   ),
@@ -217,35 +192,39 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 }
 
 class PopupDialogTheme {
-  final IconData? closeIcon;
-  final Color? closeIconColor;
   final EdgeInsets? padding;
-  final EdgeInsets? margin;
   final BoxDecoration? decoration;
   final double? height;
+  final double? leftMargin;
+  final double? rightMargin;
 
   const PopupDialogTheme({
-    this.closeIcon,
-    this.closeIconColor,
-    this.padding,
-    this.margin,
-    this.decoration,
+    this.padding = EdgeInsets.zero,
+    this.decoration = const BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.zero,
+    ),
     this.height,
-  });
+    this.leftMargin = 0,
+    this.rightMargin = 0,
+  })  : assert(padding != null, 'Padding must not be null.'),
+        assert(decoration != null, 'Decoration must not be null.'),
+        assert(
+          leftMargin != null && leftMargin >= 0,
+          'Left start point must be at least 0.',
+        ),
+        assert(
+          rightMargin != null && rightMargin >= 0,
+          'Right start point must be at least 0.',
+        );
 
   PopupDialogTheme copyWith({
-    IconData? closeIcon,
-    Color? closeIconColor,
     EdgeInsets? padding,
-    EdgeInsets? margin,
     BoxDecoration? decoration,
     double? height,
   }) {
     return PopupDialogTheme(
-      closeIcon: closeIcon ?? this.closeIcon,
-      closeIconColor: closeIconColor ?? this.closeIconColor,
       padding: padding ?? this.padding,
-      margin: margin ?? this.margin,
       decoration: decoration ?? this.decoration,
       height: height ?? this.height,
     );
@@ -253,13 +232,10 @@ class PopupDialogTheme {
 
   static PopupDialogTheme of(BuildContext context) {
     return PopupDialogTheme(
-      closeIcon: Icons.close,
       height: kToolbarHeight,
-      closeIconColor: Theme.of(context).iconTheme.color,
       padding: EdgeInsets.zero,
-      margin: EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: Theme.of(context).dialogBackgroundColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.zero,
       ),
     );

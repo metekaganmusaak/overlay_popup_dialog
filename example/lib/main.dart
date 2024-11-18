@@ -10,105 +10,106 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Overlay Popup Dialog Theme Example',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
+      home: HomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Overlay Popup Dialog Theme Example'),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              OverlayPopupDialog(
-                overlayLocation: OverlayLocation.top,
-                showCloseIcon: true,
-                popupDialogTheme: PopupDialogTheme(
-                  padding: const EdgeInsets.all(4),
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            // OverlayPopupDialog with top location.
+            OverlayPopupDialog(
+              overlayLocation: OverlayLocation.top,
+              popupDialogTheme: PopupDialogTheme(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                dialogChild: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 4),
-                  itemBuilder: (context, index) => CircleAvatar(
-                    backgroundColor: AppColors.colorList[index],
-                    radius: 20,
-                  ),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: AppColors.colorList.length,
-                ),
-                child: const ContainerWidget(location: OverlayLocation.top),
+                height: 60,
+                leftMargin: 16,
+                rightMargin: 16,
               ),
-              OverlayPopupDialog(
-                overlayLocation: OverlayLocation.on,
-                showCloseIcon: true,
-                popupDialogTheme: const PopupDialogTheme(
-                  closeIcon: Icons.remove_red_eye_outlined,
-                  closeIconColor: Colors.black,
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  height: 200,
+              dialogChild: ListView.separated(
+                padding: EdgeInsets.zero,
+                separatorBuilder: (context, index) => const SizedBox(width: 4),
+                itemBuilder: (context, index) => CircleAvatar(
+                  backgroundColor: AppColors.colorList[index],
+                  radius: 20,
                 ),
-                dialogChild: ListView.builder(
-                  itemCount: 100,
-                  itemBuilder: (BuildContext context, int index) {
-                    return ListTile(
-                      title: Text('Item ${index + 1}'),
-                    );
-                  },
-                ),
-                child: const ContainerWidget(location: OverlayLocation.on),
+                scrollDirection: Axis.horizontal,
+                itemCount: AppColors.colorList.length,
               ),
-              OverlayPopupDialog(
-                overlayLocation: OverlayLocation.bottom,
-                showCloseIcon: false,
-                popupDialogTheme: PopupDialogTheme(
-                  closeIcon: Icons.remove_red_eye_outlined,
-                  closeIconColor: Colors.black,
-                  padding: const EdgeInsets.all(4),
-                  height: null,
-                  decoration: BoxDecoration(
-                    color: Colors.deepOrangeAccent.shade100,
+              child: const ContainerWidget(location: OverlayLocation.top),
+            ),
+            // OverlayPopupDialog with on location.
+            OverlayPopupDialog(
+              overlayLocation: OverlayLocation.on,
+              popupDialogTheme: const PopupDialogTheme(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                height: 400,
+              ),
+              dialogChild: Column(
+                children: [
+                  Text(
+                    'Select a color',
+                    style: Theme.of(context).textTheme.titleLarge,
                   ),
-                ),
-                dialogChild: Wrap(
-                  children: [
-                    for (var i = 0; i < AppColors.colorList.length; i++)
-                      CircleAvatar(
-                        backgroundColor: AppColors.colorList[i],
+                  const Divider(),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 4),
+                      itemBuilder: (context, index) => CircleAvatar(
+                        backgroundColor: AppColors.colorList[index],
                         radius: 20,
                       ),
-                  ],
-                ),
-                child: const ContainerWidget(location: OverlayLocation.bottom),
+                      itemCount: AppColors.colorList.length,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+              child: const ContainerWidget(location: OverlayLocation.on),
+            ),
+            // OverlayPopupDialog with bottom location.
+            OverlayPopupDialog(
+              overlayLocation: OverlayLocation.bottom,
+              popupDialogTheme: PopupDialogTheme(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.all(16),
+                leftMargin: MediaQuery.of(context).size.width * 0.3,
+                rightMargin: MediaQuery.of(context).size.width * 0.3,
+              ),
+              dialogChild: const Text(
+                'This button is pressed.',
+                style: TextStyle(color: Colors.white),
+              ),
+              child: const ContainerWidget(location: OverlayLocation.bottom),
+            ),
+          ],
         ),
       ),
     );
