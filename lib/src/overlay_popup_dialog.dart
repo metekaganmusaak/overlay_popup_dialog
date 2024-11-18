@@ -1,14 +1,95 @@
 import 'package:flutter/material.dart';
 
-/// Enum for the location of the overlay popup dialog.
+///
+/// The enum class for adjusting the position of the OverlayPopupDialog relative to the clicked widget.
+///
 enum OverlayLocation {
   top,
   bottom,
   on;
 }
 
-/// Overlay popup dialog that shows a dialog on top of the screen.
+///
+/// A utility controller for managing the open and close actions of the OverlayPopupDialog widget.
+/// A new OverlayPopupDialogController must be created for each OverlayPopupDialog instance.
+///
+/// ```dart
+/// late final OverlayPopupDialogController _overlayController;
+///
+/// // You can initialize the controller in the initState method.
+/// @override
+/// void initState() {
+///  super.initState();
+/// _overlayController = OverlayPopupDialogController();
+/// }
+///
+/// // Don't forget to dispose of the controller in your app lifecycle.
+/// @override
+/// void dispose() {
+/// _overlayController.dispose();
+/// super.dispose();
+/// }
+///
+/// ```
+///
+class OverlayPopupDialogController {
+  VoidCallback? _showCallback;
+  VoidCallback? _hideCallback;
+
+  // Prevents the controller from being assigned to multiple OverlayPopupDialog widgets.
+  bool _isBound = false;
+
+  void _bind() {
+    if (_isBound) {
+      throw Exception(
+        'This OverlayPopupDialogController is already assigned to a OverlayPopupDialog widget. Please create a new instance for each OverlayPopupDialog widget.',
+      );
+    }
+    _isBound = true;
+  }
+
+  void _unbind() {
+    _isBound = false;
+  }
+
+  ///
+  /// Shows the OverlayPopupDialog widget.
+  ///
+  void show() {
+    if (_showCallback != null) {
+      _showCallback!();
+    }
+  }
+
+  ///
+  /// Closes the OverlayPopupDialog widget.
+  ///
+  void close() {
+    if (_hideCallback != null) {
+      _hideCallback!();
+    }
+  }
+
+  void _bindCallbacks({
+    required VoidCallback showCallback,
+    required VoidCallback hideCallback,
+  }) {
+    _bind();
+    _showCallback = showCallback;
+    _hideCallback = hideCallback;
+  }
+
+  void dispose() {
+    _showCallback = null;
+    _hideCallback = null;
+    _unbind();
+  }
+}
+
 class OverlayPopupDialog extends StatefulWidget {
+  ///
+  /// A widget that displays an overlay dialog when the child widget is clicked.
+  ///
   const OverlayPopupDialog({
     super.key,
     required this.child,
@@ -16,24 +97,48 @@ class OverlayPopupDialog extends StatefulWidget {
     this.overlayLocation = OverlayLocation.bottom,
     this.barrierDismissible = true,
     this.popupDialogTheme,
+    this.controller,
   });
 
-  /// This widget is tappable widget that will trigger the overlay
-  /// popup dialog.
+  ///
+  /// The widget that will be wrapped by the OverlayPopupDialog. It can be
+  /// any widget. Preferably a non-interactive widget like a Container or a Text widget.
+  /// If you want to use a widget that has an onTap property, you need to assign
+  /// [OverlayPopupDialogController] to the controller property to control the visibility
+  /// of the dialog.
+  ///
   final Widget child;
 
-  /// This widget will be shown on the overlay popup dialog. It can be
-  /// ListView with horizontal scroll or Row with multiple children.
+  ///
+  /// The widget that will be displayed in the overlay dialog. It can
+  /// be ListView, Column, Row etc.
+  ///
   final Widget dialogChild;
 
-  /// Location of the overlay popup dialog. Default is [OverlayLocation.bottom].
+  ///
+  /// The position of the dialog relative to the child widget.
+  /// The default value is [OverlayLocation.bottom].
+  ///
   final OverlayLocation overlayLocation;
 
-  /// If true, overlay popup dialog will be closed when user taps outside.
+  ///
+  /// A boolean value that determines whether the dialog can be
+  /// closed by tapping on the overlay. The default value is [true].
+  ///
   final bool barrierDismissible;
 
-  /// Theme for the overlay popup dialog.
+  ///
+  /// The theme of the dialog. You can customize the padding,
+  /// decoration, height, leftMargin, and rightMargin properties. The default value is
+  /// **[PopupDialogTheme.of(context)]**.
   final PopupDialogTheme? popupDialogTheme;
+
+  ///
+  /// A controller that manages the visibility of the dialog. If you want
+  /// to use a widget that has an onTap property, you need to assign [OverlayPopupDialogController]
+  /// to the controller property to control the visibility of the dialog.
+  ///
+  final OverlayPopupDialogController? controller;
 
   @override
   State<OverlayPopupDialog> createState() => _OverlayPopupDialogState();
@@ -41,15 +146,11 @@ class OverlayPopupDialog extends StatefulWidget {
 
 class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     with SingleTickerProviderStateMixin {
-  // Animation and controller instances.
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-
-  // Overlay entry to show an popup dialog.
   OverlayEntry? _overlayEntry;
 
-  // This global key is used to get the position of the 'tapped' child widget.
   final GlobalKey _childKey = GlobalKey();
 
   @override
@@ -76,19 +177,23 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
+
+    // Bind to callbacks to access the show and hide methods of the controller.
+    widget.controller?._bindCallbacks(
+      showCallback: () => _showOverlay(context),
+      hideCallback: _removeOverlay,
+    );
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     _overlayEntry?.remove();
-    _fadeAnimation.isAnimating ? _animationController.stop() : null;
-    _slideAnimation.isAnimating ? _animationController.stop() : null;
+    widget.controller?.dispose();
     super.dispose();
   }
 
   void _showOverlay(BuildContext context) {
-    // Remove the previous overlay entry if it exists.
     _overlayEntry?.remove();
 
     final renderBox = _childKey.currentContext!.findRenderObject() as RenderBox;
@@ -102,12 +207,8 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, animation) {
-              print('childPosition.dy: ${childPosition.dy}');
-
               return Stack(
                 children: [
-                  // Background that closes overlay when tapped.
-                  // Same logic with barrier dismissible property in BottomSheets, Dialogs etc.
                   Positioned.fill(
                     child: GestureDetector(
                       onTap: () {
@@ -116,15 +217,13 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                         }
                       },
                       child: ColoredBox(
-                        color: Colors.black
-                            .withOpacity(_fadeAnimation.value * 0.5),
+                        color: Colors.black.withOpacity(
+                          _fadeAnimation.value * 0.5,
+                        ),
                       ),
                     ),
                   ),
-
-                  // Dialog widget
                   Positioned(
-                    // Position of the dialog widget.
                     top: switch (widget.overlayLocation) {
                       OverlayLocation.top => childPosition.dy -
                           (widget.popupDialogTheme?.height ?? kToolbarHeight) +
@@ -139,9 +238,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                           childSize.height +
                           _slideAnimation.value,
                     },
-                    // From left edge of the screen
                     left: widget.popupDialogTheme?.leftMargin ?? 0,
-                    // To right edge of the screen
                     right: widget.popupDialogTheme?.rightMargin ?? 0,
                     child: Opacity(
                       opacity: _fadeAnimation.value,

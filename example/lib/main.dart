@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      title: 'Overlay Popup Dialog Theme Example',
+      title: 'OverlayPopupDialog Playground',
       home: HomePage(),
     );
   }
@@ -25,22 +25,59 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final OverlayPopupDialogController _overlayController;
+
+  @override
+  void initState() {
+    super.initState();
+    _overlayController = OverlayPopupDialogController();
+  }
+
+  @override
+  void dispose() {
+    _overlayController.dispose();
+    super.dispose();
+  }
+
+  final _colorList = [
+    Colors.red,
+    Colors.green,
+    Colors.blue,
+    Colors.yellow,
+    Colors.purple,
+    Colors.orange,
+    Colors.pink,
+    Colors.teal,
+    Colors.indigo,
+    Colors.cyan,
+    Colors.lime,
+    Colors.amber,
+    Colors.deepOrange,
+    Colors.lightBlue,
+    Colors.lightGreen,
+    Colors.deepPurple,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Overlay Popup Dialog Theme Example'),
+        title: const Text('OverlayPopupDialog Playground'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             // OverlayPopupDialog with top location.
             OverlayPopupDialog(
               overlayLocation: OverlayLocation.top,
+              barrierDismissible: true,
               popupDialogTheme: PopupDialogTheme(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(10),
@@ -53,11 +90,11 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.zero,
                 separatorBuilder: (context, index) => const SizedBox(width: 4),
                 itemBuilder: (context, index) => CircleAvatar(
-                  backgroundColor: AppColors.colorList[index],
+                  backgroundColor: _colorList[index],
                   radius: 20,
                 ),
                 scrollDirection: Axis.horizontal,
-                itemCount: AppColors.colorList.length,
+                itemCount: _colorList.length,
               ),
               child: const ContainerWidget(location: OverlayLocation.top),
             ),
@@ -81,10 +118,10 @@ class _HomePageState extends State<HomePage> {
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 4),
                       itemBuilder: (context, index) => CircleAvatar(
-                        backgroundColor: AppColors.colorList[index],
+                        backgroundColor: _colorList[index],
                         radius: 20,
                       ),
-                      itemCount: AppColors.colorList.length,
+                      itemCount: _colorList.length,
                     ),
                   ),
                 ],
@@ -93,21 +130,30 @@ class _HomePageState extends State<HomePage> {
             ),
             // OverlayPopupDialog with bottom location.
             OverlayPopupDialog(
+              controller: _overlayController,
+              barrierDismissible: false,
               overlayLocation: OverlayLocation.bottom,
               popupDialogTheme: PopupDialogTheme(
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.blueGrey.shade100,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 padding: const EdgeInsets.all(16),
-                leftMargin: MediaQuery.of(context).size.width * 0.3,
-                rightMargin: MediaQuery.of(context).size.width * 0.3,
+                leftMargin: 50,
+                rightMargin: 50,
               ),
-              dialogChild: const Text(
-                'This button is pressed.',
-                style: TextStyle(color: Colors.white),
+              dialogChild: TextButton(
+                onPressed: () {
+                  _overlayController.close();
+                },
+                child: const Text('Press me to close the dialog'),
               ),
-              child: const ContainerWidget(location: OverlayLocation.bottom),
+              child: TextButton(
+                onPressed: () {
+                  _overlayController.show();
+                },
+                child: const Text('Show on bottom'),
+              ),
             ),
           ],
         ),
@@ -120,11 +166,12 @@ class ContainerWidget extends StatelessWidget {
   const ContainerWidget({super.key, required this.location});
 
   final OverlayLocation location;
+  final String text = "Tap me to open on: ";
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 30,
+      height: 50,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: switch (location) {
@@ -132,33 +179,13 @@ class ContainerWidget extends StatelessWidget {
           OverlayLocation.top => Colors.blue,
           OverlayLocation.on => Colors.cyan,
         },
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Text(location.name),
+      child: Text(switch (location) {
+        OverlayLocation.bottom => '$text BOTTOM',
+        OverlayLocation.top => '$text TOP',
+        OverlayLocation.on => '$text CENTER',
+      }),
     );
   }
-}
-
-class AppColors {
-  static const colorList = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.indigo,
-    Colors.cyan,
-    Colors.lime,
-    Colors.amber,
-    Colors.deepOrange,
-    Colors.lightBlue,
-    Colors.lightGreen,
-    Colors.deepPurple,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
-  ];
 }
