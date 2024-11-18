@@ -2,6 +2,8 @@
 
 The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, or on top of it.
 
+You can test it out on: [OverlayPopupDialog Playground](https://metekaganmusaak.github.io/packages/overlay_popup_dialog)
+
 ![OverlayPopupDialogWidget](https://github.com/user-attachments/assets/1db05766-d025-46c3-bf72-8ad1c8a9f025)
 
 ## Features
