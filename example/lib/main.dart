@@ -10,9 +10,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'OverlayPopupDialog Playground',
-      home: HomePage(),
+      home: const HomePage(),
+      theme: ThemeData(
+          expansionTileTheme: ExpansionTileThemeData(
+        backgroundColor: Colors.lightBlue[100],
+        collapsedBackgroundColor: Colors.grey[200],
+      )),
     );
   }
 }
@@ -39,27 +44,32 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  final _colorList = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.indigo,
-    Colors.cyan,
-    Colors.lime,
-    Colors.amber,
-    Colors.deepOrange,
-    Colors.lightBlue,
-    Colors.lightGreen,
-    Colors.deepPurple,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
+  List<OverlayLocation> locations = [
+    OverlayLocation.bottom,
+    OverlayLocation.top,
+    OverlayLocation.on,
+    OverlayLocation.left,
+    OverlayLocation.right,
   ];
+
+  OverlayLocation selectedLocation = OverlayLocation.bottom;
+
+  List<AnimationDirection> directions = [
+    AnimationDirection.TTB,
+    AnimationDirection.BTT,
+  ];
+
+  AnimationDirection selectedDirection = AnimationDirection.TTB;
+
+  List<int> animationSpeeds = [
+    300,
+    800,
+    1500,
+  ];
+
+  int selectedAnimationSpeed = 300;
+
+  bool highlightChildOnBarrier = false;
 
   @override
   Widget build(BuildContext context) {
@@ -70,100 +80,122 @@ class _HomePageState extends State<HomePage> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // OverlayPopupDialog with top location.
-            OverlayPopupDialog(
-              overlayLocation: OverlayLocation.top,
-              animationDirection: AnimationDirection.topToBottom,
-              animationDuration: const Duration(milliseconds: 700),
-              barrierDismissible: true,
-              highlightChildOnBarrier: true,
-              popupDialogTheme: PopupDialogTheme(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                height: 60,
-                leftMargin: 16,
-                rightMargin: 16,
-              ),
-              dialogChild: ListView.separated(
-                padding: EdgeInsets.zero,
-                separatorBuilder: (context, index) => const SizedBox(width: 4),
-                itemBuilder: (context, index) => CircleAvatar(
-                  backgroundColor: _colorList[index],
-                  radius: 20,
-                ),
-                scrollDirection: Axis.horizontal,
-                itemCount: _colorList.length,
-              ),
-              child: const ContainerWidget(location: OverlayLocation.top),
+            ExpansionTile(
+              title: Text('Overlay Location: ${selectedLocation.toString()}'),
+              children: [
+                for (final location in locations)
+                  RadioListTile(
+                    value: location,
+                    groupValue: selectedLocation,
+                    title: Text(location.toString()),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => selectedLocation = location);
+                        if (selectedLocation == OverlayLocation.left ||
+                            selectedLocation == OverlayLocation.right) {
+                          setState(() {
+                            selectedDirection = AnimationDirection.LTR;
+                            directions = [
+                              AnimationDirection.LTR,
+                              AnimationDirection.RTL,
+                            ];
+                          });
+                        } else {
+                          setState(() {
+                            selectedDirection = AnimationDirection.TTB;
+                            directions = [
+                              AnimationDirection.TTB,
+                              AnimationDirection.BTT,
+                            ];
+                          });
+                        }
+                      }
+                    },
+                  ),
+              ],
             ),
-            // OverlayPopupDialog with on location.
-            const OverlayPopupDialog(
-              overlayLocation: OverlayLocation.on,
-              dialogChild: ColoredBox(
-                color: Colors.blueGrey,
-                child: Column(
+            ExpansionTile(
+              title:
+                  Text('Animation Direction: ${selectedDirection.toString()}'),
+              children: [
+                for (final direction in directions)
+                  RadioListTile(
+                    value: direction,
+                    groupValue: selectedDirection,
+                    title: Text(direction.toString()),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => selectedDirection = direction);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            ExpansionTile(
+              title: Text('Animation Speed: $selectedAnimationSpeed ms'),
+              children: [
+                for (final speed in animationSpeeds)
+                  RadioListTile(
+                    value: speed,
+                    groupValue: selectedAnimationSpeed,
+                    title: Text(speed.toString()),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => selectedAnimationSpeed = speed);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            ExpansionTile(
+              title:
+                  Text('Highlight Child On Barrier: $highlightChildOnBarrier'),
+              children: [
+                SwitchListTile(
+                  value: highlightChildOnBarrier,
+                  onChanged: (v) {
+                    setState(() => highlightChildOnBarrier = v);
+                  },
+                  title: Text(highlightChildOnBarrier
+                      ? 'Highlight ON'
+                      : 'Highlight OFF'),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                overlayLocation: selectedLocation,
+                animationDirection: selectedDirection,
+                animationDuration: Duration(
+                  milliseconds: selectedAnimationSpeed,
+                ),
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Select a color'),
+                    Text('Tap anywhere outside to close'),
                   ],
                 ),
-              ),
-              child: ContainerWidget(location: OverlayLocation.on),
-            ),
-            // OverlayPopupDialog with bottom location.
-            OverlayPopupDialog(
-              controller: _overlayController,
-              barrierDismissible: false,
-              animationDirection: AnimationDirection.leftToRight,
-              overlayLocation: OverlayLocation.bottom,
-              popupDialogTheme: PopupDialogTheme(
-                decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade100,
-                  borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  height: 50,
+                  width: 150,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  padding: const EdgeInsets.all(4),
+                  child: const Text('TAP ME'),
                 ),
-                padding: const EdgeInsets.all(16),
-                leftMargin: 50,
-                rightMargin: 50,
-              ),
-              dialogChild: TextButton(
-                onPressed: () {
-                  _overlayController.close();
-                },
-                child: const Text('Press me to close the dialog'),
-              ),
-              child: TextButton(
-                onPressed: () {
-                  _overlayController.show();
-                },
-                child: const Text('Show on bottom'),
               ),
             ),
-            const OverlayPopupDialog(
-              overlayLocation: OverlayLocation.left,
-              animationDirection: AnimationDirection.rightToLeft,
-              animationDuration: Duration(seconds: 1),
-              popupDialogTheme: PopupDialogTheme(
-                rightMargin: 500,
-                leftMargin: 50,
-              ),
-              dialogChild: Text('Hello! there brow'),
-              child: Text('Tap me to open on left'),
-            ),
-            const OverlayPopupDialog(
-              overlayLocation: OverlayLocation.right,
-              animationDirection: AnimationDirection.bottomToTop,
-              animationDuration: Duration(seconds: 1),
-              popupDialogTheme: PopupDialogTheme(
-                rightMargin: 10,
-              ),
-              dialogChild: Text('Hello!'),
-              child: Text('Tap me to open on right'),
-            ),
+            const Spacer(),
           ],
         ),
       ),

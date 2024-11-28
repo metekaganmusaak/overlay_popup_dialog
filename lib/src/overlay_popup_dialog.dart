@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 
 ///
@@ -14,10 +13,10 @@ enum OverlayLocation {
 
 /// Customize animation direction for the OverlayPopupDialog widget.
 enum AnimationDirection {
-  leftToRight,
-  rightToLeft,
-  topToBottom,
-  bottomToTop;
+  LTR,
+  RTL,
+  TTB,
+  BTT;
 }
 
 ///
@@ -101,17 +100,69 @@ class OverlayPopupDialog extends StatefulWidget {
   ///
   /// A widget that displays an overlay dialog when the child widget is clicked.
   ///
-  const OverlayPopupDialog({
+
+  factory OverlayPopupDialog({
+    Key? key,
+    required Widget child,
+    required Widget dialogChild,
+    OverlayLocation overlayLocation = OverlayLocation.bottom,
+    AnimationDirection animationDirection = AnimationDirection.TTB,
+    bool barrierDismissible = true,
+    PopupDialogTheme? popupDialogTheme,
+    OverlayPopupDialogController? controller,
+    Duration animationDuration = kThemeAnimationDuration,
+    bool highlightChildOnBarrier = false,
+    BoxConstraints? constraints,
+  }) {
+    // Vertical overlay locations (top/bottom)
+    if (overlayLocation == OverlayLocation.top ||
+        overlayLocation == OverlayLocation.bottom ||
+        overlayLocation == OverlayLocation.on) {
+      if (animationDirection != AnimationDirection.TTB &&
+          animationDirection != AnimationDirection.BTT) {
+        throw ArgumentError(
+            'For top/bottom overlay locations, animation direction must be TTB or BTT. '
+            'Current values: overlayLocation: $overlayLocation, animationDirection: $animationDirection');
+      }
+    }
+
+    // Horizontal overlay locations (left/right)
+    if (overlayLocation == OverlayLocation.left ||
+        overlayLocation == OverlayLocation.right) {
+      if (animationDirection != AnimationDirection.LTR &&
+          animationDirection != AnimationDirection.RTL) {
+        throw ArgumentError(
+            'For left/right overlay locations, animation direction must be LTR or RTL. '
+            'Current values: overlayLocation: $overlayLocation, animationDirection: $animationDirection');
+      }
+    }
+
+    return OverlayPopupDialog._internal(
+      key: key,
+      dialogChild: dialogChild,
+      overlayLocation: overlayLocation,
+      animationDirection: animationDirection,
+      barrierDismissible: barrierDismissible,
+      popupDialogTheme: popupDialogTheme,
+      controller: controller,
+      animationDuration: animationDuration,
+      highlightChildOnBarrier: highlightChildOnBarrier,
+      constraints: constraints,
+      child: child,
+    );
+  }
+
+  const OverlayPopupDialog._internal({
     super.key,
     required this.child,
     required this.dialogChild,
-    this.overlayLocation = OverlayLocation.bottom,
-    this.barrierDismissible = true,
+    required this.overlayLocation,
+    required this.animationDirection,
+    required this.barrierDismissible,
     this.popupDialogTheme,
     this.controller,
-    this.animationDirection,
-    this.animationDuration = kThemeAnimationDuration,
-    this.highlightChildOnBarrier = false,
+    required this.animationDuration,
+    required this.highlightChildOnBarrier,
     this.constraints,
   });
 
@@ -161,8 +212,8 @@ class OverlayPopupDialog extends StatefulWidget {
   ///
   final bool highlightChildOnBarrier;
 
-  final AnimationDirection? animationDirection;
   final Duration animationDuration;
+  final AnimationDirection animationDirection;
   final BoxConstraints? constraints;
 
   @override
@@ -207,21 +258,19 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   }
 
   Animation<double> _getSlideAnimation() {
-    final defaultDirection = switch (widget.overlayLocation) {
-      OverlayLocation.top => AnimationDirection.bottomToTop,
-      OverlayLocation.bottom => AnimationDirection.topToBottom,
-      OverlayLocation.left => AnimationDirection.rightToLeft,
-      OverlayLocation.right => AnimationDirection.leftToRight,
-      OverlayLocation.on => AnimationDirection.topToBottom,
+    final direction = switch (widget.overlayLocation) {
+      OverlayLocation.top => AnimationDirection.TTB,
+      OverlayLocation.bottom => AnimationDirection.TTB,
+      OverlayLocation.left => AnimationDirection.RTL,
+      OverlayLocation.right => AnimationDirection.LTR,
+      OverlayLocation.on => AnimationDirection.TTB,
     };
 
-    final direction = widget.animationDirection ?? defaultDirection;
-
     final double begin = switch (direction) {
-      AnimationDirection.leftToRight => -100.0,
-      AnimationDirection.rightToLeft => 100.0,
-      AnimationDirection.topToBottom => -100.0,
-      AnimationDirection.bottomToTop => 100.0,
+      AnimationDirection.LTR => -100.0,
+      AnimationDirection.RTL => 100.0,
+      AnimationDirection.TTB => -100.0,
+      AnimationDirection.BTT => 100.0,
     };
 
     return Tween<double>(
@@ -249,7 +298,13 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     final childSize = renderBox.size;
     final screenSize = MediaQuery.of(context).size;
 
-    final popupDialogHeight = widget.popupDialogTheme?.height ?? kToolbarHeight;
+    final popupDialogHeight = _getDialogSize()?.height ??
+        widget.popupDialogTheme?.height ??
+        kToolbarHeight;
+
+    print('Child position: ${childPosition.dy}');
+    print('Child size: ${childSize.height}');
+    print('Popup dialog height: $popupDialogHeight');
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
@@ -276,45 +331,58 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                       ),
                     ),
                   ),
-                  // Tıklanan widget'ı overlay'de yeniden çiz
-                  Positioned(
-                    top: childPosition.dy,
-                    left: childPosition.dx,
-                    child: GestureDetector(
-                      onTap: () {
-                        if (widget.barrierDismissible) {
-                          _removeOverlay();
-                        }
-                      },
-                      child: SizedBox(
-                        width: childSize.width,
-                        height: childSize.height,
-                        child: widget.child,
+                  if (widget.highlightChildOnBarrier)
+                    Positioned(
+                      top: childPosition.dy,
+                      left: childPosition.dx,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (widget.barrierDismissible) {
+                            _removeOverlay();
+                          }
+                        },
+                        child: SizedBox(
+                          width: childSize.width,
+                          height: childSize.height,
+                          child: widget.child,
+                        ),
                       ),
                     ),
-                  ),
                   Positioned(
                     top: switch (widget.overlayLocation) {
                       OverlayLocation.top => childPosition.dy -
                           popupDialogHeight +
-                          _slideAnimation.value *
+                          (_slideAnimation.value *
                               (widget.animationDirection ==
-                                      AnimationDirection.bottomToTop
-                                  ? 1
-                                  : -1),
+                                      AnimationDirection.BTT
+                                  ? -1
+                                  : 1)),
                       OverlayLocation.bottom => childPosition.dy +
                           childSize.height +
-                          _slideAnimation.value,
+                          (_slideAnimation.value *
+                              (widget.animationDirection ==
+                                      AnimationDirection.BTT
+                                  ? -1
+                                  : 1)),
                       OverlayLocation.left ||
                       OverlayLocation.right =>
-                        childPosition.dy + _slideAnimation.value,
-                      OverlayLocation.on => childPosition.dy +
-                          ((childSize.height - popupDialogHeight) / 2),
+                        childPosition.dy,
+                      OverlayLocation.on =>
+                        ((childPosition.dy + childSize.height) / 2) +
+                            _slideAnimation.value *
+                                (widget.animationDirection ==
+                                        AnimationDirection.BTT
+                                    ? -1
+                                    : 1),
                     },
                     left: switch (widget.overlayLocation) {
                       OverlayLocation.left => childPosition.dx -
                           (_getDialogSize()?.width ?? 0) +
-                          _slideAnimation.value -
+                          (_slideAnimation.value *
+                              (widget.animationDirection ==
+                                      AnimationDirection.LTR
+                                  ? -1
+                                  : 1)) -
                           (widget.popupDialogTheme?.leftMargin ?? 0),
                       OverlayLocation.right => childPosition.dx +
                           childSize.width +
@@ -336,7 +404,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                             ),
                         child: Container(
                           key: _dialogKey,
-                          height: widget.popupDialogTheme?.height,
+                          height: _getDialogSize()?.height ??
+                              widget.popupDialogTheme?.height ??
+                              kToolbarHeight,
                           decoration: widget.popupDialogTheme?.decoration ??
                               BoxDecoration(
                                 color:
@@ -367,6 +437,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     if (_dialogKey.currentContext != null) {
       final RenderBox renderBox =
           _dialogKey.currentContext!.findRenderObject() as RenderBox;
+
       return renderBox.size;
     }
     return null;
