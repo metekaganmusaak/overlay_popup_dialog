@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 
 ///
@@ -6,7 +7,17 @@ import 'package:flutter/material.dart';
 enum OverlayLocation {
   top,
   bottom,
+  left,
+  right,
   on;
+}
+
+/// Customize animation direction for the OverlayPopupDialog widget.
+enum AnimationDirection {
+  leftToRight,
+  rightToLeft,
+  topToBottom,
+  bottomToTop;
 }
 
 ///
@@ -98,6 +109,10 @@ class OverlayPopupDialog extends StatefulWidget {
     this.barrierDismissible = true,
     this.popupDialogTheme,
     this.controller,
+    this.animationDirection,
+    this.animationDuration = kThemeAnimationDuration,
+    this.highlightChildOnBarrier = false,
+    this.constraints,
   });
 
   ///
@@ -140,6 +155,16 @@ class OverlayPopupDialog extends StatefulWidget {
   ///
   final OverlayPopupDialogController? controller;
 
+  ///
+  /// This boolean value determines whether the child widget will be highlighted
+  /// when the dialog is displayed. The default value is [false].
+  ///
+  final bool highlightChildOnBarrier;
+
+  final AnimationDirection? animationDirection;
+  final Duration animationDuration;
+  final BoxConstraints? constraints;
+
   @override
   State<OverlayPopupDialog> createState() => _OverlayPopupDialogState();
 }
@@ -152,6 +177,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   OverlayEntry? _overlayEntry;
 
   final GlobalKey _childKey = GlobalKey();
+  final GlobalKey _dialogKey = GlobalKey();
 
   @override
   void initState() {
@@ -159,7 +185,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
     _animationController = AnimationController(
       vsync: this,
-      duration: kThemeAnimationDuration,
+      duration: widget.animationDuration,
     );
 
     _fadeAnimation = Tween<double>(
@@ -170,19 +196,41 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       curve: Curves.easeInOut,
     ));
 
-    _slideAnimation = Tween<double>(
-      begin: -20.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    // Animasyon yönüne göre başlangıç ve bitiş değerlerini ayarlayalım
+    _slideAnimation = _getSlideAnimation();
 
     // Bind to callbacks to access the show and hide methods of the controller.
     widget.controller?._bindCallbacks(
       showCallback: () => _showOverlay(context),
       hideCallback: _removeOverlay,
     );
+  }
+
+  Animation<double> _getSlideAnimation() {
+    final defaultDirection = switch (widget.overlayLocation) {
+      OverlayLocation.top => AnimationDirection.bottomToTop,
+      OverlayLocation.bottom => AnimationDirection.topToBottom,
+      OverlayLocation.left => AnimationDirection.rightToLeft,
+      OverlayLocation.right => AnimationDirection.leftToRight,
+      OverlayLocation.on => AnimationDirection.topToBottom,
+    };
+
+    final direction = widget.animationDirection ?? defaultDirection;
+
+    final double begin = switch (direction) {
+      AnimationDirection.leftToRight => -100.0,
+      AnimationDirection.rightToLeft => 100.0,
+      AnimationDirection.topToBottom => -100.0,
+      AnimationDirection.bottomToTop => 100.0,
+    };
+
+    return Tween<double>(
+      begin: begin,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
   }
 
   @override
@@ -199,6 +247,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     final renderBox = _childKey.currentContext!.findRenderObject() as RenderBox;
     final childPosition = renderBox.localToGlobal(Offset.zero);
     final childSize = renderBox.size;
+    final screenSize = MediaQuery.of(context).size;
+
+    final popupDialogHeight = widget.popupDialogTheme?.height ?? kToolbarHeight;
 
     _overlayEntry = OverlayEntry(
       builder: (context) {
@@ -217,42 +268,85 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                         }
                       },
                       child: ColoredBox(
-                        color: Colors.black.withOpacity(
-                          _fadeAnimation.value * 0.5,
-                        ),
+                        color: Theme.of(context)
+                            .scaffoldBackgroundColor
+                            .withOpacity(
+                              _fadeAnimation.value * 0.5,
+                            ),
+                      ),
+                    ),
+                  ),
+                  // Tıklanan widget'ı overlay'de yeniden çiz
+                  Positioned(
+                    top: childPosition.dy,
+                    left: childPosition.dx,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (widget.barrierDismissible) {
+                          _removeOverlay();
+                        }
+                      },
+                      child: SizedBox(
+                        width: childSize.width,
+                        height: childSize.height,
+                        child: widget.child,
                       ),
                     ),
                   ),
                   Positioned(
                     top: switch (widget.overlayLocation) {
                       OverlayLocation.top => childPosition.dy -
-                          (widget.popupDialogTheme?.height ?? kToolbarHeight) +
-                          _slideAnimation.value,
-                      OverlayLocation.on => childPosition.dy +
-                          (kToolbarHeight / 2) -
-                          ((widget.popupDialogTheme?.height ?? kToolbarHeight) /
-                              2) -
-                          (childSize.height / 2) -
-                          _slideAnimation.value,
+                          popupDialogHeight +
+                          _slideAnimation.value *
+                              (widget.animationDirection ==
+                                      AnimationDirection.bottomToTop
+                                  ? 1
+                                  : -1),
                       OverlayLocation.bottom => childPosition.dy +
                           childSize.height +
                           _slideAnimation.value,
+                      OverlayLocation.left ||
+                      OverlayLocation.right =>
+                        childPosition.dy + _slideAnimation.value,
+                      OverlayLocation.on => childPosition.dy +
+                          ((childSize.height - popupDialogHeight) / 2),
                     },
-                    left: widget.popupDialogTheme?.leftMargin ?? 0,
-                    right: widget.popupDialogTheme?.rightMargin ?? 0,
+                    left: switch (widget.overlayLocation) {
+                      OverlayLocation.left => childPosition.dx -
+                          (_getDialogSize()?.width ?? 0) +
+                          _slideAnimation.value -
+                          (widget.popupDialogTheme?.leftMargin ?? 0),
+                      OverlayLocation.right => childPosition.dx +
+                          childSize.width +
+                          _slideAnimation.value +
+                          (widget.popupDialogTheme?.rightMargin ?? 0),
+                      _ => widget.popupDialogTheme?.leftMargin ?? 0,
+                    },
+                    right: switch (widget.overlayLocation) {
+                      OverlayLocation.left || OverlayLocation.right => null,
+                      _ => widget.popupDialogTheme?.rightMargin ?? 0,
+                    },
                     child: Opacity(
                       opacity: _fadeAnimation.value,
-                      child: Container(
-                        height: widget.popupDialogTheme?.height,
-                        width: double.infinity,
-                        decoration: widget.popupDialogTheme?.decoration ??
-                            BoxDecoration(
-                              color: Theme.of(context).scaffoldBackgroundColor,
+                      child: ConstrainedBox(
+                        constraints: widget.constraints ??
+                            BoxConstraints(
+                              maxWidth: screenSize.width,
+                              minWidth: 100,
                             ),
-                        child: Padding(
-                          padding: widget.popupDialogTheme?.padding ??
-                              EdgeInsets.zero,
-                          child: widget.dialogChild,
+                        child: Container(
+                          key: _dialogKey,
+                          height: widget.popupDialogTheme?.height,
+                          decoration: widget.popupDialogTheme?.decoration ??
+                              BoxDecoration(
+                                color:
+                                    Theme.of(context).scaffoldBackgroundColor,
+                              ),
+                          child: Padding(
+                            padding: widget.popupDialogTheme?.padding ??
+                                EdgeInsets.zero,
+                            child: widget.dialogChild,
+                          ),
                         ),
                       ),
                     ),
@@ -267,6 +361,15 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
     Overlay.of(context).insert(_overlayEntry!);
     _animationController.forward();
+  }
+
+  Size? _getDialogSize() {
+    if (_dialogKey.currentContext != null) {
+      final RenderBox renderBox =
+          _dialogKey.currentContext!.findRenderObject() as RenderBox;
+      return renderBox.size;
+    }
+    return null;
   }
 
   void _removeOverlay() {

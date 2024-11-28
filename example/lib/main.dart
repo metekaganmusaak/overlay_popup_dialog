@@ -75,7 +75,10 @@ class _HomePageState extends State<HomePage> {
             // OverlayPopupDialog with top location.
             OverlayPopupDialog(
               overlayLocation: OverlayLocation.top,
+              animationDirection: AnimationDirection.topToBottom,
+              animationDuration: const Duration(milliseconds: 700),
               barrierDismissible: true,
+              highlightChildOnBarrier: true,
               popupDialogTheme: PopupDialogTheme(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -99,39 +102,24 @@ class _HomePageState extends State<HomePage> {
               child: const ContainerWidget(location: OverlayLocation.top),
             ),
             // OverlayPopupDialog with on location.
-            OverlayPopupDialog(
+            const OverlayPopupDialog(
               overlayLocation: OverlayLocation.on,
-              popupDialogTheme: const PopupDialogTheme(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                height: 400,
+              dialogChild: ColoredBox(
+                color: Colors.blueGrey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Select a color'),
+                  ],
+                ),
               ),
-              dialogChild: Column(
-                children: [
-                  Text(
-                    'Select a color',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: EdgeInsets.zero,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 4),
-                      itemBuilder: (context, index) => CircleAvatar(
-                        backgroundColor: _colorList[index],
-                        radius: 20,
-                      ),
-                      itemCount: _colorList.length,
-                    ),
-                  ),
-                ],
-              ),
-              child: const ContainerWidget(location: OverlayLocation.on),
+              child: ContainerWidget(location: OverlayLocation.on),
             ),
             // OverlayPopupDialog with bottom location.
             OverlayPopupDialog(
               controller: _overlayController,
               barrierDismissible: false,
+              animationDirection: AnimationDirection.leftToRight,
               overlayLocation: OverlayLocation.bottom,
               popupDialogTheme: PopupDialogTheme(
                 decoration: BoxDecoration(
@@ -154,6 +142,27 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: const Text('Show on bottom'),
               ),
+            ),
+            const OverlayPopupDialog(
+              overlayLocation: OverlayLocation.left,
+              animationDirection: AnimationDirection.rightToLeft,
+              animationDuration: Duration(seconds: 1),
+              popupDialogTheme: PopupDialogTheme(
+                rightMargin: 500,
+                leftMargin: 50,
+              ),
+              dialogChild: Text('Hello! there brow'),
+              child: Text('Tap me to open on left'),
+            ),
+            const OverlayPopupDialog(
+              overlayLocation: OverlayLocation.right,
+              animationDirection: AnimationDirection.bottomToTop,
+              animationDuration: Duration(seconds: 1),
+              popupDialogTheme: PopupDialogTheme(
+                rightMargin: 10,
+              ),
+              dialogChild: Text('Hello!'),
+              child: Text('Tap me to open on right'),
             ),
           ],
         ),
@@ -178,6 +187,8 @@ class ContainerWidget extends StatelessWidget {
           OverlayLocation.bottom => Colors.lime,
           OverlayLocation.top => Colors.blue,
           OverlayLocation.on => Colors.cyan,
+          OverlayLocation.left => Colors.red,
+          OverlayLocation.right => Colors.green,
         },
         borderRadius: BorderRadius.circular(16),
       ),
@@ -185,6 +196,8 @@ class ContainerWidget extends StatelessWidget {
         OverlayLocation.bottom => '$text BOTTOM',
         OverlayLocation.top => '$text TOP',
         OverlayLocation.on => '$text CENTER',
+        OverlayLocation.left => '$text LEFT',
+        OverlayLocation.right => '$text RIGHT',
       }),
     );
   }
