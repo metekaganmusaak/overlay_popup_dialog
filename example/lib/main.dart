@@ -14,10 +14,11 @@ class MyApp extends StatelessWidget {
       title: 'OverlayPopupDialog Playground',
       home: const HomePage(),
       theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
           expansionTileTheme: ExpansionTileThemeData(
-        backgroundColor: Colors.lightBlue[100],
-        collapsedBackgroundColor: Colors.grey[200],
-      )),
+            backgroundColor: Colors.lightBlue[100],
+            collapsedBackgroundColor: Colors.grey[200],
+          )),
     );
   }
 }
@@ -60,14 +61,6 @@ class _HomePageState extends State<HomePage> {
   ];
 
   AnimationDirection selectedDirection = AnimationDirection.TTB;
-
-  List<int> animationSpeeds = [
-    300,
-    800,
-    1500,
-  ];
-
-  int selectedAnimationSpeed = 300;
 
   bool highlightChildOnBarrier = false;
 
@@ -135,22 +128,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             ExpansionTile(
-              title: Text('Animation Speed: $selectedAnimationSpeed ms'),
-              children: [
-                for (final speed in animationSpeeds)
-                  RadioListTile(
-                    value: speed,
-                    groupValue: selectedAnimationSpeed,
-                    title: Text(speed.toString()),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => selectedAnimationSpeed = speed);
-                      }
-                    },
-                  ),
-              ],
-            ),
-            ExpansionTile(
               title:
                   Text('Highlight Child On Barrier: $highlightChildOnBarrier'),
               children: [
@@ -171,16 +148,20 @@ class _HomePageState extends State<HomePage> {
               child: OverlayPopupDialog(
                 overlayLocation: selectedLocation,
                 animationDirection: selectedDirection,
-                animationDuration: Duration(
-                  milliseconds: selectedAnimationSpeed,
-                ),
                 highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Tap anywhere outside to close'),
-                  ],
+                dialogChild: Container(
+                  height: kToolbarHeight,
+                  width: MediaQuery.of(context).size.width,
+                  color: Colors.blue[100],
+                  child: ListView.builder(
+                    itemCount: 20,
+                    itemBuilder: (BuildContext context, int index) {
+                      return Text('Item $index');
+                    },
+                    scrollDirection: Axis.horizontal,
+                  ),
                 ),
+                bottomGap: 20,
                 child: Container(
                   height: 50,
                   width: 150,
@@ -199,38 +180,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class ContainerWidget extends StatelessWidget {
-  const ContainerWidget({super.key, required this.location});
-
-  final OverlayLocation location;
-  final String text = "Tap me to open on: ";
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: switch (location) {
-          OverlayLocation.bottom => Colors.lime,
-          OverlayLocation.top => Colors.blue,
-          OverlayLocation.on => Colors.cyan,
-          OverlayLocation.left => Colors.red,
-          OverlayLocation.right => Colors.green,
-        },
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(switch (location) {
-        OverlayLocation.bottom => '$text BOTTOM',
-        OverlayLocation.top => '$text TOP',
-        OverlayLocation.on => '$text CENTER',
-        OverlayLocation.left => '$text LEFT',
-        OverlayLocation.right => '$text RIGHT',
-      }),
     );
   }
 }
