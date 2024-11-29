@@ -298,15 +298,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   }
 
   Animation<double> _getSlideAnimation() {
-    final direction = switch (widget.overlayLocation) {
-      OverlayLocation.top => AnimationDirection.TTB,
-      OverlayLocation.bottom => AnimationDirection.TTB,
-      OverlayLocation.left => AnimationDirection.RTL,
-      OverlayLocation.right => AnimationDirection.LTR,
-      OverlayLocation.on => AnimationDirection.TTB,
-    };
-
-    final double begin = switch (direction) {
+    final double begin = switch (widget.animationDirection) {
       AnimationDirection.LTR => -100.0,
       AnimationDirection.RTL => 100.0,
       AnimationDirection.TTB => -100.0,
@@ -354,24 +346,19 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                       link: _layerLink,
                       followerAnchor: _getFollowerAnchor(),
                       targetAnchor: _getTargetAnchor(),
-                      offset: _calculateOffset(childSize, screenSize),
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, animation) {
-                          return Opacity(
-                            opacity: _fadeAnimation.value,
-                            child: Transform.translate(
-                              offset: _getTranslationOffset(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: screenSize.width,
-                                  maxHeight: screenSize.height * 0.8,
-                                ),
-                                child: widget.dialogChild,
-                              ),
+                      offset: _calculateOffset(),
+                      child: Opacity(
+                        opacity: _fadeAnimation.value,
+                        child: Transform.translate(
+                          offset: _getTranslationOffset(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: screenSize.width,
+                              maxHeight: screenSize.height * 0.8,
                             ),
-                          );
-                        },
+                            child: widget.dialogChild,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -406,7 +393,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     };
   }
 
-  Offset _calculateOffset(Size childSize, Size screenSize) {
+  Offset _calculateOffset() {
     final gap = switch (widget.overlayLocation) {
       OverlayLocation.top => Offset(0, -widget.topGap),
       OverlayLocation.bottom => Offset(0, widget.bottomGap),
@@ -419,12 +406,11 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   Offset _getTranslationOffset() {
     final value = _slideAnimation.value;
-    return switch (widget.overlayLocation) {
-      OverlayLocation.top => Offset(0, -value),
-      OverlayLocation.bottom => Offset(0, value),
-      OverlayLocation.left => Offset(-value, 0),
-      OverlayLocation.right => Offset(value, 0),
-      OverlayLocation.on => Offset(0, value),
+    return switch (widget.animationDirection) {
+      AnimationDirection.TTB => Offset(0, value),
+      AnimationDirection.BTT => Offset(0, -value),
+      AnimationDirection.LTR => Offset(value, 0),
+      AnimationDirection.RTL => Offset(-value, 0),
     };
   }
 
