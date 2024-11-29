@@ -32,16 +32,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final OverlayPopupDialogController _overlayController;
+  late final OverlayPopupDialogController _overlayController2;
 
   @override
   void initState() {
     super.initState();
     _overlayController = OverlayPopupDialogController();
+    _overlayController2 = OverlayPopupDialogController();
   }
 
   @override
   void dispose() {
     _overlayController.dispose();
+    _overlayController2.dispose();
     super.dispose();
   }
 
@@ -70,7 +73,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('OverlayPopupDialog Playground'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -82,6 +85,7 @@ class _HomePageState extends State<HomePage> {
                 for (final location in locations)
                   RadioListTile(
                     value: location,
+                    dense: true,
                     groupValue: selectedLocation,
                     title: Text(location.toString()),
                     onChanged: (v) {
@@ -116,6 +120,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 for (final direction in directions)
                   RadioListTile(
+                    dense: true,
                     value: direction,
                     groupValue: selectedDirection,
                     title: Text(direction.toString()),
@@ -133,6 +138,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 SwitchListTile(
                   value: highlightChildOnBarrier,
+                  dense: true,
                   onChanged: (v) {
                     setState(() => highlightChildOnBarrier = v);
                   },
@@ -142,11 +148,14 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            const Spacer(),
+
+            const SizedBox(height: 64),
+            // No Controller & Not Tappable Child
             Align(
               alignment: Alignment.center,
               child: OverlayPopupDialog(
                 overlayLocation: selectedLocation,
+                leftGap: 0,
                 animationDirection: selectedDirection,
                 highlightChildOnBarrier: highlightChildOnBarrier,
                 dialogChild: Container(
@@ -168,20 +177,130 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 child: Container(
-                  height: 50,
-                  width: 150,
-                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.black, width: 1),
+                    color: Colors.blue[200],
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  padding: const EdgeInsets.all(4),
-                  child: const Text('TAP ME'),
+                  child: const Text('No Controller & Not Tappable Child'),
                 ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 16),
+            // No Controller & Tappable Child
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                overlayLocation: selectedLocation,
+                leftGap: 0,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: Container(
+                  height: kToolbarHeight,
+                  width: MediaQuery.of(context).size.width,
+                  color: Colors.blue[100],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: 100,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Text('Item $index');
+                          },
+                          scrollDirection: Axis.horizontal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    print('Worked...');
+                  },
+                  child: const Text('No Controller & Tappable Child '),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // With Controller & Not Tappable Child
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                controller: _overlayController,
+                overlayLocation: selectedLocation,
+                leftGap: 0,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: Container(
+                  height: kToolbarHeight,
+                  width: MediaQuery.of(context).size.width,
+                  color: Colors.blue[100],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: 100,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Text('Item $index');
+                          },
+                          scrollDirection: Axis.horizontal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    _overlayController.show();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('With Controller & Not Tappable Child'),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // With Controller & Tappable Child
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                controller: _overlayController2,
+                overlayLocation: selectedLocation,
+                leftGap: 0,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: Container(
+                  height: kToolbarHeight,
+                  width: MediaQuery.of(context).size.width,
+                  color: Colors.blue[100],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: 100,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Text('Item $index');
+                          },
+                          scrollDirection: Axis.horizontal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {
+                    _overlayController2.show();
+                  },
+                  child: const Text('With Controller & Tappable Child '),
+                ),
+              ),
+            ),
+            const SizedBox(height: 64),
           ],
         ),
       ),

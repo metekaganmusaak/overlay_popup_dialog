@@ -18,7 +18,7 @@ In the `pubspec.yaml` of your flutter project, add the following dependency:
 
 ```yaml
 dependencies:
-  overlay_popup_dialog: ^0.0.1
+  overlay_popup_dialog: ^look_up_for_latest_version
 ```
 
 Import these:

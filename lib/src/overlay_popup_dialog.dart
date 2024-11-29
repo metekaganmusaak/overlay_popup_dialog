@@ -19,6 +19,14 @@ enum AnimationDirection {
   BTT;
 }
 
+class OverlayPopupDialogException implements Exception {
+  final String message;
+  OverlayPopupDialogException(this.message);
+
+  @override
+  String toString() => "OverlayPopupDialogException: $message";
+}
+
 ///
 /// A utility controller for managing the open and close actions of the OverlayPopupDialog widget.
 /// A new OverlayPopupDialogController must be created for each OverlayPopupDialog instance.
@@ -45,133 +53,102 @@ enum AnimationDirection {
 class OverlayPopupDialogController {
   VoidCallback? _showCallback;
   VoidCallback? _hideCallback;
-
-  // Prevents the controller from being assigned to multiple OverlayPopupDialog widgets.
   bool _isBound = false;
 
-  void _bind() {
+  // Widget'a attach edildiğinde çağrılacak
+  void attach() {
     if (_isBound) {
-      throw Exception(
-        'This OverlayPopupDialogController is already assigned to a OverlayPopupDialog widget. Please create a new instance for each OverlayPopupDialog widget.',
+      throw OverlayPopupDialogException(
+        'This OverlayPopupDialogController is already assigned to an OverlayPopupDialog widget. Please create a new instance for each OverlayPopupDialog widget.',
       );
     }
     _isBound = true;
   }
 
-  void _unbind() {
+  void detach() {
     _isBound = false;
+    _showCallback = null;
+    _hideCallback = null;
   }
 
-  ///
-  /// Shows the OverlayPopupDialog widget.
-  ///
-  void show() {
+  bool show() {
+    if (!_isBound) {
+      throw OverlayPopupDialogException(
+        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
+      );
+    }
+
     if (_showCallback != null) {
       _showCallback!();
+      return true;
     }
+
+    throw OverlayPopupDialogException('No show callback is available.');
   }
 
-  ///
-  /// Closes the OverlayPopupDialog widget.
-  ///
   void close() {
+    if (!_isBound) {
+      throw OverlayPopupDialogException(
+        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
+      );
+    }
+
     if (_hideCallback != null) {
       _hideCallback!();
+      return;
     }
+
+    throw OverlayPopupDialogException(
+      'No hide callback has been bound to this OverlayPopupDialogController.',
+    );
   }
 
   void _bindCallbacks({
     required VoidCallback showCallback,
     required VoidCallback hideCallback,
   }) {
-    _bind();
     _showCallback = showCallback;
     _hideCallback = hideCallback;
   }
 
   void dispose() {
-    _showCallback = null;
-    _hideCallback = null;
-    _unbind();
+    detach();
   }
 }
 
 class OverlayPopupDialog extends StatefulWidget {
-  factory OverlayPopupDialog({
-    Key? key,
-    required Widget child,
-    required Widget dialogChild,
-    OverlayLocation overlayLocation = OverlayLocation.bottom,
-    AnimationDirection animationDirection = AnimationDirection.TTB,
-    bool barrierDismissible = true,
-    OverlayPopupDialogController? controller,
-    bool highlightChildOnBarrier = false,
-    double leftGap = 0,
-    double rightGap = 0,
-    double topGap = 0,
-    double bottomGap = 0,
-  }) {
-    // Vertical overlay locations (top/bottom)
-    if (overlayLocation == OverlayLocation.top ||
-        overlayLocation == OverlayLocation.bottom ||
-        overlayLocation == OverlayLocation.on) {
-      if (animationDirection != AnimationDirection.TTB &&
-          animationDirection != AnimationDirection.BTT) {
-        throw ArgumentError(
-            'For top/bottom overlay locations, animation direction must be TTB or BTT. '
-            'Current values: overlayLocation: $overlayLocation, animationDirection: $animationDirection');
-      }
-    }
-
-    // Horizontal overlay locations (left/right)
-    if (overlayLocation == OverlayLocation.left ||
-        overlayLocation == OverlayLocation.right) {
-      if (animationDirection != AnimationDirection.LTR &&
-          animationDirection != AnimationDirection.RTL) {
-        throw ArgumentError(
-            'For left/right overlay locations, animation direction must be LTR or RTL. '
-            'Current values: overlayLocation: $overlayLocation, animationDirection: $animationDirection');
-      }
-    }
-
-    if (controller != null) {
-      controller._bind();
-    }
-
-    if (leftGap < 0 || rightGap < 0 || topGap < 0 || bottomGap < 0) {
-      throw ArgumentError('Gaps must be at least 0.');
-    }
-
-    return OverlayPopupDialog._internal(
-      key: key,
-      dialogChild: dialogChild,
-      overlayLocation: overlayLocation,
-      animationDirection: animationDirection,
-      barrierDismissible: barrierDismissible,
-      controller: controller,
-      highlightChildOnBarrier: highlightChildOnBarrier,
-      leftGap: leftGap,
-      rightGap: rightGap,
-      topGap: topGap,
-      bottomGap: bottomGap,
-      child: child,
-    );
-  }
-
-  const OverlayPopupDialog._internal({
+  const OverlayPopupDialog({
     super.key,
     required this.child,
     required this.dialogChild,
-    required this.overlayLocation,
-    required this.animationDirection,
-    required this.barrierDismissible,
+    this.overlayLocation = OverlayLocation.bottom,
+    this.animationDirection = AnimationDirection.TTB,
+    this.barrierDismissible = true,
     this.controller,
-    required this.highlightChildOnBarrier,
+    this.highlightChildOnBarrier = false,
     this.leftGap = 0,
     this.rightGap = 0,
     this.topGap = 0,
     this.bottomGap = 0,
-  });
+  })  : assert(
+            overlayLocation == OverlayLocation.top ||
+                    overlayLocation == OverlayLocation.bottom ||
+                    overlayLocation == OverlayLocation.on
+                ? (animationDirection == AnimationDirection.TTB ||
+                    animationDirection == AnimationDirection.BTT)
+                : true,
+            'For top/bottom overlay locations, animation direction must be TTB or BTT.'),
+        assert(
+            overlayLocation == OverlayLocation.left ||
+                    overlayLocation == OverlayLocation.right
+                ? (animationDirection == AnimationDirection.LTR ||
+                    animationDirection == AnimationDirection.RTL)
+                : true,
+            'For left/right overlay locations, animation direction must be LTR or RTL.'),
+        assert(leftGap >= 0, 'Left gap must be at least 0.'),
+        assert(rightGap >= 0, 'Right gap must be at least 0.'),
+        assert(topGap >= 0, 'Top gap must be at least 0.'),
+        assert(bottomGap >= 0, 'Bottom gap must be at least 0.');
 
   ///
   /// The widget that will be wrapped by the OverlayPopupDialog. It can be
@@ -195,6 +172,15 @@ class OverlayPopupDialog extends StatefulWidget {
   final OverlayLocation overlayLocation;
 
   ///
+  /// The direction of the animation when the dialog is displayed.
+  /// The default value is [AnimationDirection.TTB].
+  ///
+  /// For vertical overlay locations (top/bottom), the animation direction must be TTB or BTT.
+  /// For horizontal overlay locations (left/right), the animation direction must be LTR or RTL.
+  ///
+  final AnimationDirection animationDirection;
+
+  ///
   /// A boolean value that determines whether the dialog can be
   /// closed by tapping on the overlay. The default value is [true].
   ///
@@ -214,20 +200,12 @@ class OverlayPopupDialog extends StatefulWidget {
   final bool highlightChildOnBarrier;
 
   ///
-  /// The direction of the animation when the dialog is displayed.
-  /// The default value is [AnimationDirection.TTB].
-  ///
-  /// For vertical overlay locations (top/bottom), the animation direction must be TTB or BTT.
-  /// For horizontal overlay locations (left/right), the animation direction must be LTR or RTL.
-  ///
-  final AnimationDirection animationDirection;
-
-  ///
   /// The gap between the dialog and the left side of the tapped widget, child.
   /// Default value is [0.0].
   ///
   /// If you want to see changes, you need to set OverlayLocation property to
   /// [OverlayLocation.left].
+  ///
   final double leftGap;
 
   ///
@@ -235,6 +213,7 @@ class OverlayPopupDialog extends StatefulWidget {
   /// Default value is [0.0].
   /// If you want to see changes, you need to set OverlayLocation property to
   /// [OverlayLocation.right].
+  ///
   final double rightGap;
 
   ///
@@ -242,6 +221,7 @@ class OverlayPopupDialog extends StatefulWidget {
   /// Default value is [0.0].
   /// If you want to see changes, you need to set OverlayLocation property to
   /// [OverlayLocation.top].
+  ///
   final double topGap;
 
   ///
@@ -249,6 +229,7 @@ class OverlayPopupDialog extends StatefulWidget {
   /// Default value is [0.0].
   /// If you want to see changes, you need to set OverlayLocation property to
   /// [OverlayLocation.bottom].
+  ///
   final double bottomGap;
 
   @override
@@ -269,8 +250,8 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   void initState() {
     super.initState();
 
-    _initializeAnimations();
     _bindController();
+    _initializeAnimations();
   }
 
   void _initializeAnimations() {
@@ -291,6 +272,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   }
 
   void _bindController() {
+    widget.controller?.attach();
     widget.controller?._bindCallbacks(
       showCallback: () => _showOverlay(context),
       hideCallback: _removeOverlay,
@@ -318,7 +300,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   void dispose() {
     _animationController.dispose();
     _overlayEntry?.remove();
-    widget.controller?._unbind();
+    widget.controller?.detach();
     widget.controller?.dispose();
     super.dispose();
   }
@@ -435,10 +417,14 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       left: childPosition.dx,
       child: GestureDetector(
         onTap: widget.barrierDismissible ? _removeOverlay : null,
-        child: SizedBox(
-          width: childSize.width,
-          height: childSize.height,
-          child: widget.child,
+        // AbsorbPointer is necessary to prevent the child widget from
+        // receiving touch events when the barrier is tapped.
+        child: AbsorbPointer(
+          child: SizedBox(
+            width: childSize.width,
+            height: childSize.height,
+            child: widget.child,
+          ),
         ),
       ),
     );
@@ -455,10 +441,16 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: GestureDetector(
+      child: Listener(
         key: _childKey,
-        onTap: () {
-          _showOverlay(context);
+        behavior: HitTestBehavior.deferToChild,
+        onPointerDown: (_) {
+          // Check if the controller is exists.
+          if (widget.controller == null) {
+            print('No controller attached. Call _showOverlay() method.');
+            _showOverlay(context);
+            return;
+          }
         },
         child: widget.child,
       ),
