@@ -153,15 +153,20 @@ class _HomePageState extends State<HomePage> {
                   height: kToolbarHeight,
                   width: MediaQuery.of(context).size.width,
                   color: Colors.blue[100],
-                  child: ListView.builder(
-                    itemCount: 20,
-                    itemBuilder: (BuildContext context, int index) {
-                      return Text('Item $index');
-                    },
-                    scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: 100,
+                          itemBuilder: (BuildContext context, int index) {
+                            return Text('Item $index');
+                          },
+                          scrollDirection: Axis.horizontal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                bottomGap: 20,
                 child: Container(
                   height: 50,
                   width: 150,
