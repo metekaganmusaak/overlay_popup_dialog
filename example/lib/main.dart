@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ExpansionTile(
               title: Text('Overlay Location: ${selectedLocation.toString()}'),
@@ -151,39 +151,18 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 64),
             // No Controller & Not Tappable Child
-            Align(
-              alignment: Alignment.center,
-              child: OverlayPopupDialog(
-                overlayLocation: selectedLocation,
-                leftGap: 0,
-                animationDirection: selectedDirection,
-                highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: Container(
-                  height: kToolbarHeight,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.blue[100],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: 100,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Text('Item $index');
-                          },
-                          scrollDirection: Axis.horizontal,
-                        ),
-                      ),
-                    ],
-                  ),
+            OverlayPopupDialog(
+              overlayLocation: selectedLocation,
+              animationDirection: selectedDirection,
+              highlightChildOnBarrier: highlightChildOnBarrier,
+              dialogChild: const _DialogWidget(onClose: null),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[200],
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[200],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text('No Controller & Not Tappable Child'),
-                ),
+                child: const Text('No Controller & Not Tappable Child'),
               ),
             ),
             const SizedBox(height: 16),
@@ -192,27 +171,9 @@ class _HomePageState extends State<HomePage> {
               alignment: Alignment.center,
               child: OverlayPopupDialog(
                 overlayLocation: selectedLocation,
-                leftGap: 0,
                 animationDirection: selectedDirection,
                 highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: Container(
-                  height: kToolbarHeight,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.blue[100],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: 100,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Text('Item $index');
-                          },
-                          scrollDirection: Axis.horizontal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                dialogChild: const _DialogWidget(onClose: null),
                 child: ElevatedButton(
                   onPressed: () {
                     print('Worked...');
@@ -227,28 +188,11 @@ class _HomePageState extends State<HomePage> {
               alignment: Alignment.center,
               child: OverlayPopupDialog(
                 controller: _overlayController,
-                overlayLocation: selectedLocation,
+                overlayLocation: OverlayLocation.bottom,
                 leftGap: 0,
-                animationDirection: selectedDirection,
+                animationDirection: AnimationDirection.BTT,
                 highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: Container(
-                  height: kToolbarHeight,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.blue[100],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: 100,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Text('Item $index');
-                          },
-                          scrollDirection: Axis.horizontal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                dialogChild: _DialogWidget(onClose: _overlayController.close),
                 child: InkWell(
                   onTap: () {
                     _overlayController.show();
@@ -266,32 +210,14 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 16),
             // With Controller & Tappable Child
-            Align(
-              alignment: Alignment.center,
+            Center(
               child: OverlayPopupDialog(
                 controller: _overlayController2,
                 overlayLocation: selectedLocation,
                 leftGap: 0,
                 animationDirection: selectedDirection,
                 highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: Container(
-                  height: kToolbarHeight,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.blue[100],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: 100,
-                          itemBuilder: (BuildContext context, int index) {
-                            return Text('Item $index');
-                          },
-                          scrollDirection: Axis.horizontal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                dialogChild: _DialogWidget(onClose: _overlayController2.close),
                 child: ElevatedButton(
                   onPressed: () {
                     _overlayController2.show();
@@ -300,9 +226,54 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+
             const SizedBox(height: 64),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DialogWidget extends StatelessWidget {
+  final VoidCallback? onClose;
+
+  const _DialogWidget({
+    super.key,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.blue[100],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Dialog Title',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const Divider(),
+          Text(
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          if (onClose != null)
+            Align(
+              alignment: Alignment.bottomRight,
+              child: ElevatedButton(
+                onPressed: onClose,
+                child: const Text('Close'),
+              ),
+            ),
+        ],
       ),
     );
   }

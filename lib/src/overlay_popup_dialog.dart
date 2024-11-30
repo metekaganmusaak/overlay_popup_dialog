@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:overlay_popup_dialog/src/overlay_popup_dialog_controller.dart';
 
 ///
 /// The enum class for adjusting the position of the OverlayPopupDialog relative to the clicked widget.
@@ -17,103 +18,6 @@ enum AnimationDirection {
   RTL,
   TTB,
   BTT;
-}
-
-class OverlayPopupDialogException implements Exception {
-  final String message;
-  OverlayPopupDialogException(this.message);
-
-  @override
-  String toString() => "OverlayPopupDialogException: $message";
-}
-
-///
-/// A utility controller for managing the open and close actions of the OverlayPopupDialog widget.
-/// A new OverlayPopupDialogController must be created for each OverlayPopupDialog instance.
-///
-/// ```dart
-/// late final OverlayPopupDialogController _overlayController;
-///
-/// // You can initialize the controller in the initState method.
-/// @override
-/// void initState() {
-///  super.initState();
-/// _overlayController = OverlayPopupDialogController();
-/// }
-///
-/// // Don't forget to dispose of the controller in your app lifecycle.
-/// @override
-/// void dispose() {
-/// _overlayController.dispose();
-/// super.dispose();
-/// }
-///
-/// ```
-///
-class OverlayPopupDialogController {
-  VoidCallback? _showCallback;
-  VoidCallback? _hideCallback;
-  bool _isBound = false;
-
-  // Widget'a attach edildiğinde çağrılacak
-  void attach() {
-    if (_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is already assigned to an OverlayPopupDialog widget. Please create a new instance for each OverlayPopupDialog widget.',
-      );
-    }
-    _isBound = true;
-  }
-
-  void detach() {
-    _isBound = false;
-    _showCallback = null;
-    _hideCallback = null;
-  }
-
-  bool show() {
-    if (!_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
-      );
-    }
-
-    if (_showCallback != null) {
-      _showCallback!();
-      return true;
-    }
-
-    throw OverlayPopupDialogException('No show callback is available.');
-  }
-
-  void close() {
-    if (!_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
-      );
-    }
-
-    if (_hideCallback != null) {
-      _hideCallback!();
-      return;
-    }
-
-    throw OverlayPopupDialogException(
-      'No hide callback has been bound to this OverlayPopupDialogController.',
-    );
-  }
-
-  void _bindCallbacks({
-    required VoidCallback showCallback,
-    required VoidCallback hideCallback,
-  }) {
-    _showCallback = showCallback;
-    _hideCallback = hideCallback;
-  }
-
-  void dispose() {
-    detach();
-  }
 }
 
 class OverlayPopupDialog extends StatefulWidget {
@@ -273,7 +177,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   void _bindController() {
     widget.controller?.attach();
-    widget.controller?._bindCallbacks(
+    widget.controller?.bindCallbacks(
       showCallback: () => _showOverlay(context),
       hideCallback: _removeOverlay,
     );
@@ -335,7 +239,12 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                           offset: _getTranslationOffset(),
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth: screenSize.width,
+                              maxWidth: widget.overlayLocation ==
+                                          OverlayLocation.left ||
+                                      widget.overlayLocation ==
+                                          OverlayLocation.right
+                                  ? (screenSize.width - childSize.width) / 2
+                                  : screenSize.width,
                               maxHeight: screenSize.height * 0.8,
                             ),
                             child: widget.dialogChild,
@@ -445,9 +354,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
         key: _childKey,
         behavior: HitTestBehavior.deferToChild,
         onPointerDown: (_) {
-          // Check if the controller is exists.
           if (widget.controller == null) {
-            print('No controller attached. Call _showOverlay() method.');
             _showOverlay(context);
             return;
           }
