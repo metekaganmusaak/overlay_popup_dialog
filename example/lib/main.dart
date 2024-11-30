@@ -175,9 +175,7 @@ class _HomePageState extends State<HomePage> {
                 highlightChildOnBarrier: highlightChildOnBarrier,
                 dialogChild: const _DialogWidget(onClose: null),
                 child: ElevatedButton(
-                  onPressed: () {
-                    debugPrint('Tapped');
-                  },
+                  onPressed: () {},
                   child: const Text('No Controller & Tappable Child '),
                 ),
               ),

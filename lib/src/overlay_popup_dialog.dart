@@ -12,7 +12,9 @@ enum OverlayLocation {
   on;
 }
 
+///
 /// Customize animation direction for the OverlayPopupDialog widget.
+///
 enum AnimationDirection {
   LTR,
   RTL,
@@ -142,13 +144,28 @@ class OverlayPopupDialog extends StatefulWidget {
 
 class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     with SingleTickerProviderStateMixin {
+  // Animations
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-  OverlayEntry? _overlayEntry;
 
+  // Overlays
+  OverlayEntry? _overlayEntry;
+  final GlobalKey _overlayKey = GlobalKey();
+  double? overlayHeight;
+
+  // Keys
   final GlobalKey _childKey = GlobalKey();
   final LayerLink _layerLink = LayerLink();
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _overlayEntry?.remove();
+    widget.controller?.detach();
+    widget.controller?.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -156,6 +173,14 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
     _bindController();
     _initializeAnimations();
+  }
+
+  void _bindController() {
+    widget.controller?.attach();
+    widget.controller?.bindCallbacks(
+      showCallback: () => _showOverlay(context),
+      hideCallback: _removeOverlay,
+    );
   }
 
   void _initializeAnimations() {
@@ -175,14 +200,6 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     _slideAnimation = _getSlideAnimation();
   }
 
-  void _bindController() {
-    widget.controller?.attach();
-    widget.controller?.bindCallbacks(
-      showCallback: () => _showOverlay(context),
-      hideCallback: _removeOverlay,
-    );
-  }
-
   Animation<double> _getSlideAnimation() {
     final double begin = switch (widget.animationDirection) {
       AnimationDirection.LTR => -100.0,
@@ -200,15 +217,6 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     ));
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _overlayEntry?.remove();
-    widget.controller?.detach();
-    widget.controller?.dispose();
-    super.dispose();
-  }
-
   void _showOverlay(BuildContext context) {
     _overlayEntry?.remove();
 
@@ -222,46 +230,108 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
         return Material(
           color: Colors.transparent,
           child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, animation) {
-                return Stack(
-                  children: [
-                    _buildBarrier(context),
-                    _buildHighlightedChild(childPosition, childSize),
+            animation: _animationController,
+            builder: (context, animation) {
+              return Stack(
+                children: [
+                  _buildBarrier(context),
+                  _buildHighlightedChild(childPosition, childSize),
+                  if ([OverlayLocation.left, OverlayLocation.right]
+                      .contains(widget.overlayLocation))
                     CompositedTransformFollower(
                       link: _layerLink,
                       followerAnchor: _getFollowerAnchor(),
                       targetAnchor: _getTargetAnchor(),
                       offset: _calculateOffset(),
-                      child: Opacity(
-                        opacity: _fadeAnimation.value,
-                        child: Transform.translate(
-                          offset: _getTranslationOffset(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: widget.overlayLocation ==
-                                          OverlayLocation.left ||
-                                      widget.overlayLocation ==
-                                          OverlayLocation.right
-                                  ? (screenSize.width - childSize.width) / 2
-                                  : screenSize.width,
-                              maxHeight: screenSize.height * 0.8,
-                            ),
-                            child: widget.dialogChild,
-                          ),
-                        ),
+                      child: _buildOverlayContent(screenSize, childSize),
+                    )
+                  else
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: _calculateOverlayPosition(childPosition, childSize),
+                      child: Container(
+                        key: _overlayKey,
+                        child: _buildOverlayContent(screenSize, childSize),
                       ),
                     ),
-                  ],
-                );
-              }),
+                ],
+              );
+            },
+          ),
         );
       },
     );
 
     Overlay.of(context).insert(_overlayEntry!);
 
+    _calculateOverlayHeight();
+
     _animationController.forward();
+  }
+
+  void _calculateOverlayHeight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final overlayRenderBox =
+          _overlayKey.currentContext?.findRenderObject() as RenderBox?;
+      if (overlayRenderBox != null && _overlayEntry != null) {
+        overlayHeight = overlayRenderBox.size.height;
+        _overlayEntry!.markNeedsBuild();
+      }
+    });
+  }
+
+  double _calculateOverlayPosition(Offset childPosition, Size childSize) {
+    overlayHeight ??= 0;
+
+    switch (widget.overlayLocation) {
+      case OverlayLocation.top:
+        return childPosition.dy - overlayHeight! - widget.topGap;
+      case OverlayLocation.bottom:
+        return childPosition.dy + childSize.height + widget.bottomGap;
+      case OverlayLocation.on:
+        return childPosition.dy - (overlayHeight! / 2) + childSize.height / 2;
+      default:
+        return 0;
+    }
+  }
+
+  Widget _buildOverlayContent(Size screenSize, Size childSize) {
+    Widget content = Container(
+      width: [OverlayLocation.top, OverlayLocation.bottom, OverlayLocation.on]
+              .contains(widget.overlayLocation)
+          ? screenSize.width
+          : (screenSize.width - childSize.width) / 2,
+      constraints: BoxConstraints(
+        maxHeight: screenSize.height * 0.8,
+      ),
+      child: widget.dialogChild,
+    );
+
+    if (widget.overlayLocation == OverlayLocation.on) {
+      content = Transform.translate(
+        offset: Offset(0, -childSize.height / 2),
+        child: content,
+      );
+    }
+
+    return Opacity(
+      opacity: _fadeAnimation.value,
+      child: Transform.translate(
+        offset: _getTranslationOffset(),
+        child: content,
+      ),
+    );
+  }
+
+  Offset _getTranslationOffset() {
+    final value = _slideAnimation.value;
+    return switch (widget.animationDirection) {
+      AnimationDirection.TTB => Offset(0, value),
+      AnimationDirection.BTT => Offset(0, -value),
+      AnimationDirection.LTR => Offset(value, 0),
+      AnimationDirection.RTL => Offset(-value, 0),
+    };
   }
 
   Alignment _getFollowerAnchor() {
@@ -293,16 +363,6 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       OverlayLocation.on => Offset.zero,
     };
     return gap;
-  }
-
-  Offset _getTranslationOffset() {
-    final value = _slideAnimation.value;
-    return switch (widget.animationDirection) {
-      AnimationDirection.TTB => Offset(0, value),
-      AnimationDirection.BTT => Offset(0, -value),
-      AnimationDirection.LTR => Offset(value, 0),
-      AnimationDirection.RTL => Offset(-value, 0),
-    };
   }
 
   Widget _buildBarrier(context) {
