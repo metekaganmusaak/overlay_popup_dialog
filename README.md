@@ -1,16 +1,18 @@
 # Overlay Popup Dialog Widget
 
-The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, or on top of it.
+The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, left, right or on top of it.
 
-You can test it out on web here => [OverlayPopupDialog Playground](https://metekaganmusaak.github.io/packages/overlay_popup_dialog)
+[You can test this package on web by clicking here!](https://metekaganmusaak.github.io/packages/overlay_popup_dialog)
 
-![OverlayPopupDialogWidget](https://github.com/user-attachments/assets/1db05766-d025-46c3-bf72-8ad1c8a9f025)
+<img src="https://github.com/user-attachments/assets/c7af104b-810a-4f21-a590-984099c24e8e" width="300" height="300"/>
 
 ## Features
 
-- Show overlay dialog on; top, bottom or on the tapped widget.
+- Show overlay dialog on; top, bottom, left, right or on the tapped widget.
 - Customize overlay dialog as you wish.
 - Use controller to call open and close overlay functions.
+- Controler animation directions like top to bottom, left to right etc.
+- Show highlighted button when overlay open.
 
 ## Getting started
 
@@ -18,7 +20,7 @@ In the `pubspec.yaml` of your flutter project, add the following dependency:
 
 ```yaml
 dependencies:
-  overlay_popup_dialog: ^look_up_for_latest_version
+  overlay_popup_dialog: ^latest
 ```
 
 Import these:
@@ -51,35 +53,24 @@ Then wrap your widget with OverlayPopupDialog like below.
 
 ```dart
 OverlayPopupDialog(
-  controller = _overlayController,
-  barrierDismissible = false,
-  overlayLocation = OverlayLocation.bottom,
-  popupDialogTheme = PopupDialogTheme(
-    decoration: BoxDecoration(
-      color: Colors.blueGrey.shade100,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    padding: const EdgeInsets.all(16),
-    leftMargin: 50,
-    rightMargin: 50,
-  ),
-  dialogChild = TextButton(
-    onPressed: () {
-      _overlayController.close();
-    },
-    child: const Text('Press me to close the dialog'),
-  ),
-  child = TextButton(
-    onPressed: () {
-      _overlayController.show();
-    },
-    child: const Text('Show on bottom'),
+ controller = _overlayController2,
+ overlayLocation = selectedLocation,
+ leftGap = 0,
+ animationDirection = selectedDirection,
+ highlightChildOnBarrier = highlightChildOnBarrier,
+ dialogChild = _DialogWidget(onClose: _overlayController2.close),
+ child = ElevatedButton(
+   onPressed: () {
+     _overlayController2.show();
+   },
+   child: const Text('With Controller & Tappable Child '),
   ),
 ),
 ```
 
-That's it. You don't need to create a controller. But be sure that your child widget doesn't have
-any onTap callback functions.
+That's it. You don't need to create a controller. But if you want to trigger dialog opening with custom callbacks,
+you can use it. ⚠️ IMPORTANT: If you assigned a controller to OverlayPopupDialog widget, you must use this controller's
+functions to open/close dialog. Otherwise it won't work.
 
 ```dart
 import 'package:flutter/material.dart';
@@ -94,9 +85,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'OverlayPopupDialog Playground',
-      home: HomePage(),
+      home: const HomePage(),
+      theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          expansionTileTheme: ExpansionTileThemeData(
+            backgroundColor: Colors.lightBlue[100],
+            collapsedBackgroundColor: Colors.grey[200],
+          )),
     );
   }
 }
@@ -110,40 +107,40 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final OverlayPopupDialogController _overlayController;
+  late final OverlayPopupDialogController _overlayController2;
 
   @override
   void initState() {
     super.initState();
     _overlayController = OverlayPopupDialogController();
+    _overlayController2 = OverlayPopupDialogController();
   }
 
   @override
   void dispose() {
     _overlayController.dispose();
+    _overlayController2.dispose();
     super.dispose();
   }
 
-  final _colorList = [
-    Colors.red,
-    Colors.green,
-    Colors.blue,
-    Colors.yellow,
-    Colors.purple,
-    Colors.orange,
-    Colors.pink,
-    Colors.teal,
-    Colors.indigo,
-    Colors.cyan,
-    Colors.lime,
-    Colors.amber,
-    Colors.deepOrange,
-    Colors.lightBlue,
-    Colors.lightGreen,
-    Colors.deepPurple,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
+  List<OverlayLocation> locations = [
+    OverlayLocation.bottom,
+    OverlayLocation.top,
+    OverlayLocation.on,
+    OverlayLocation.left,
+    OverlayLocation.right,
   ];
+
+  OverlayLocation selectedLocation = OverlayLocation.bottom;
+
+  List<AnimationDirection> directions = [
+    AnimationDirection.TTB,
+    AnimationDirection.BTT,
+  ];
+
+  AnimationDirection selectedDirection = AnimationDirection.TTB;
+
+  bool highlightChildOnBarrier = false;
 
   @override
   Widget build(BuildContext context) {
@@ -151,94 +148,160 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('OverlayPopupDialog Playground'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // OverlayPopupDialog with top location.
-            OverlayPopupDialog(
-              overlayLocation: OverlayLocation.top,
-              barrierDismissible: true,
-              popupDialogTheme: PopupDialogTheme(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                height: 60,
-                leftMargin: 16,
-                rightMargin: 16,
-              ),
-              dialogChild: ListView.separated(
-                padding: EdgeInsets.zero,
-                separatorBuilder: (context, index) => const SizedBox(width: 4),
-                itemBuilder: (context, index) => CircleAvatar(
-                  backgroundColor: _colorList[index],
-                  radius: 20,
-                ),
-                scrollDirection: Axis.horizontal,
-                itemCount: _colorList.length,
-              ),
-              child: const ContainerWidget(location: OverlayLocation.top),
-            ),
-            // OverlayPopupDialog with on location.
-            OverlayPopupDialog(
-              overlayLocation: OverlayLocation.on,
-              popupDialogTheme: const PopupDialogTheme(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                height: 400,
-              ),
-              dialogChild: Column(
-                children: [
-                  Text(
-                    'Select a color',
-                    style: Theme.of(context).textTheme.titleLarge,
+            ExpansionTile(
+              title: Text('Overlay Location: ${selectedLocation.toString()}'),
+              children: [
+                for (final location in locations)
+                  RadioListTile(
+                    value: location,
+                    dense: true,
+                    groupValue: selectedLocation,
+                    title: Text(location.toString()),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => selectedLocation = location);
+                        if (selectedLocation == OverlayLocation.left ||
+                            selectedLocation == OverlayLocation.right) {
+                          setState(() {
+                            selectedDirection = AnimationDirection.LTR;
+                            directions = [
+                              AnimationDirection.LTR,
+                              AnimationDirection.RTL,
+                            ];
+                          });
+                        } else {
+                          setState(() {
+                            selectedDirection = AnimationDirection.TTB;
+                            directions = [
+                              AnimationDirection.TTB,
+                              AnimationDirection.BTT,
+                            ];
+                          });
+                        }
+                      }
+                    },
                   ),
-                  const Divider(),
-                  Expanded(
-                    child: ListView.separated(
-                      padding: EdgeInsets.zero,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 4),
-                      itemBuilder: (context, index) => CircleAvatar(
-                        backgroundColor: _colorList[index],
-                        radius: 20,
-                      ),
-                      itemCount: _colorList.length,
-                    ),
-                  ),
-                ],
-              ),
-              child: const ContainerWidget(location: OverlayLocation.on),
+              ],
             ),
-            // OverlayPopupDialog with bottom location.
-            OverlayPopupDialog(
-              controller: _overlayController,
-              barrierDismissible: false,
-              overlayLocation: OverlayLocation.bottom,
-              popupDialogTheme: PopupDialogTheme(
-                decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade100,
-                  borderRadius: BorderRadius.circular(10),
+            ExpansionTile(
+              title:
+                  Text('Animation Direction: ${selectedDirection.toString()}'),
+              children: [
+                for (final direction in directions)
+                  RadioListTile(
+                    dense: true,
+                    value: direction,
+                    groupValue: selectedDirection,
+                    title: Text(direction.toString()),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => selectedDirection = direction);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            ExpansionTile(
+              title:
+                  Text('Highlight Child On Barrier: $highlightChildOnBarrier'),
+              children: [
+                SwitchListTile(
+                  value: highlightChildOnBarrier,
+                  dense: true,
+                  onChanged: (v) {
+                    setState(() => highlightChildOnBarrier = v);
+                  },
+                  title: Text(highlightChildOnBarrier
+                      ? 'Highlight ON'
+                      : 'Highlight OFF'),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 64),
+            // No Controller & Not Tappable Child
+            OverlayPopupDialog(
+              overlayLocation: selectedLocation,
+              animationDirection: selectedDirection,
+              highlightChildOnBarrier: highlightChildOnBarrier,
+              dialogChild: const _DialogWidget(onClose: null),
+              child: Container(
                 padding: const EdgeInsets.all(16),
-                leftMargin: 50,
-                rightMargin: 50,
-              ),
-              dialogChild: TextButton(
-                onPressed: () {
-                  _overlayController.close();
-                },
-                child: const Text('Press me to close the dialog'),
-              ),
-              child: TextButton(
-                onPressed: () {
-                  _overlayController.show();
-                },
-                child: const Text('Show on bottom'),
+                decoration: BoxDecoration(
+                  color: Colors.blue[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('No Controller & Not Tappable Child'),
               ),
             ),
+            const SizedBox(height: 16),
+            // No Controller & Tappable Child
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                overlayLocation: selectedLocation,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: const _DialogWidget(onClose: null),
+                child: ElevatedButton(
+                  onPressed: () {
+                    debugPrint('Tapped');
+                  },
+                  child: const Text('No Controller & Tappable Child '),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // With Controller & Not Tappable Child
+            Align(
+              alignment: Alignment.center,
+              child: OverlayPopupDialog(
+                controller: _overlayController,
+                overlayLocation: selectedLocation,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: _DialogWidget(onClose: _overlayController.close),
+                child: InkWell(
+                  onTap: () {
+                    _overlayController.show();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('With Controller & Not Tappable Child'),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // With Controller & Tappable Child
+            Center(
+              child: OverlayPopupDialog(
+                controller: _overlayController2,
+                overlayLocation: selectedLocation,
+                leftGap: 0,
+                animationDirection: selectedDirection,
+                highlightChildOnBarrier: highlightChildOnBarrier,
+                dialogChild: _DialogWidget(onClose: _overlayController2.close),
+                child: ElevatedButton(
+                  onPressed: () {
+                    _overlayController2.show();
+                  },
+                  child: const Text('With Controller & Tappable Child '),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 64),
           ],
         ),
       ),
@@ -246,37 +309,54 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class ContainerWidget extends StatelessWidget {
-  const ContainerWidget({super.key, required this.location});
+class _DialogWidget extends StatelessWidget {
+  final VoidCallback? onClose;
 
-  final OverlayLocation location;
-  final String text = "Tap me to open on: ";
+  const _DialogWidget({
+    super.key,
+    required this.onClose,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 50,
-      alignment: Alignment.center,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: switch (location) {
-          OverlayLocation.bottom => Colors.lime,
-          OverlayLocation.top => Colors.blue,
-          OverlayLocation.on => Colors.cyan,
-        },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.blue[100],
       ),
-      child: Text(switch (location) {
-        OverlayLocation.bottom => '$text BOTTOM',
-        OverlayLocation.top => '$text TOP',
-        OverlayLocation.on => '$text CENTER',
-      }),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Dialog Title',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const Divider(),
+          Text(
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          if (onClose != null)
+            Align(
+              alignment: Alignment.bottomRight,
+              child: ElevatedButton(
+                onPressed: onClose,
+                child: const Text('Close'),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
+
 ```
 
 Also you can check whole example code here:
-[https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart](https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart)
+[OverlayPopupDialog Github Link](https://github.com/metekaganmusaak/overlay_popup_dialog/blob/main/example/lib/main.dart)
 
 ## Additional information
 

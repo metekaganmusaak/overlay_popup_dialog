@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.5
+## 0.1.0
 
 * Fixed some known bugs.
 * Animation direction feature added. You can control sliding animation of your overlay popup dialog.

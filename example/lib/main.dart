@@ -176,7 +176,7 @@ class _HomePageState extends State<HomePage> {
                 dialogChild: const _DialogWidget(onClose: null),
                 child: ElevatedButton(
                   onPressed: () {
-                    print('Worked...');
+                    debugPrint('Tapped');
                   },
                   child: const Text('No Controller & Tappable Child '),
                 ),
@@ -188,9 +188,8 @@ class _HomePageState extends State<HomePage> {
               alignment: Alignment.center,
               child: OverlayPopupDialog(
                 controller: _overlayController,
-                overlayLocation: OverlayLocation.bottom,
-                leftGap: 0,
-                animationDirection: AnimationDirection.BTT,
+                overlayLocation: selectedLocation,
+                animationDirection: selectedDirection,
                 highlightChildOnBarrier: highlightChildOnBarrier,
                 dialogChild: _DialogWidget(onClose: _overlayController.close),
                 child: InkWell(
