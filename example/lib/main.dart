@@ -61,6 +61,8 @@ class _HomePageState extends State<HomePage> {
   List<AnimationDirection> directions = [
     AnimationDirection.TTB,
     AnimationDirection.BTT,
+    AnimationDirection.LTR,
+    AnimationDirection.RTL,
   ];
 
   AnimationDirection selectedDirection = AnimationDirection.TTB;
@@ -90,25 +92,9 @@ class _HomePageState extends State<HomePage> {
                     title: Text(location.toString()),
                     onChanged: (v) {
                       if (v != null) {
-                        setState(() => selectedLocation = location);
-                        if (selectedLocation == OverlayLocation.left ||
-                            selectedLocation == OverlayLocation.right) {
-                          setState(() {
-                            selectedDirection = AnimationDirection.LTR;
-                            directions = [
-                              AnimationDirection.LTR,
-                              AnimationDirection.RTL,
-                            ];
-                          });
-                        } else {
-                          setState(() {
-                            selectedDirection = AnimationDirection.TTB;
-                            directions = [
-                              AnimationDirection.TTB,
-                              AnimationDirection.BTT,
-                            ];
-                          });
-                        }
+                        setState(() {
+                          selectedLocation = v;
+                        });
                       }
                     },
                   ),
@@ -148,40 +134,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-
-            const SizedBox(height: 64),
-            // No Controller & Not Tappable Child
-            OverlayPopupDialog(
-              overlayLocation: selectedLocation,
-              animationDirection: selectedDirection,
-              highlightChildOnBarrier: highlightChildOnBarrier,
-              dialogChild: const _DialogWidget(onClose: null),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text('No Controller & Not Tappable Child'),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // No Controller & Tappable Child
-            Align(
-              alignment: Alignment.center,
-              child: OverlayPopupDialog(
-                overlayLocation: selectedLocation,
-                animationDirection: selectedDirection,
-                highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: const _DialogWidget(onClose: null),
-                child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('No Controller & Tappable Child '),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // With Controller & Not Tappable Child
             Align(
               alignment: Alignment.center,
               child: OverlayPopupDialog(
@@ -205,25 +157,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            // With Controller & Tappable Child
-            Center(
-              child: OverlayPopupDialog(
-                controller: _overlayController2,
-                overlayLocation: selectedLocation,
-                leftGap: 0,
-                animationDirection: selectedDirection,
-                highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: _DialogWidget(onClose: _overlayController2.close),
-                child: ElevatedButton(
-                  onPressed: () {
-                    _overlayController2.show();
-                  },
-                  child: const Text('With Controller & Tappable Child '),
-                ),
-              ),
-            ),
-
             const SizedBox(height: 64),
           ],
         ),

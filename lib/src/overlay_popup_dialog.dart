@@ -22,7 +22,7 @@ enum AnimationDirection {
   BTT;
 }
 
-class OverlayPopupDialog extends StatefulWidget {
+final class OverlayPopupDialog extends StatefulWidget {
   const OverlayPopupDialog({
     super.key,
     required this.child,
@@ -36,22 +36,10 @@ class OverlayPopupDialog extends StatefulWidget {
     this.rightGap = 0,
     this.topGap = 0,
     this.bottomGap = 0,
-  })  : assert(
-            overlayLocation == OverlayLocation.top ||
-                    overlayLocation == OverlayLocation.bottom ||
-                    overlayLocation == OverlayLocation.on
-                ? (animationDirection == AnimationDirection.TTB ||
-                    animationDirection == AnimationDirection.BTT)
-                : true,
-            'For top/bottom overlay locations, animation direction must be TTB or BTT.'),
-        assert(
-            overlayLocation == OverlayLocation.left ||
-                    overlayLocation == OverlayLocation.right
-                ? (animationDirection == AnimationDirection.LTR ||
-                    animationDirection == AnimationDirection.RTL)
-                : true,
-            'For left/right overlay locations, animation direction must be LTR or RTL.'),
-        assert(leftGap >= 0, 'Left gap must be at least 0.'),
+    this.barrierColor = Colors.black,
+    this.curve = Curves.easeInOut,
+    this.animationDuration = kThemeAnimationDuration,
+  })  : assert(leftGap >= 0, 'Left gap must be at least 0.'),
         assert(rightGap >= 0, 'Right gap must be at least 0.'),
         assert(topGap >= 0, 'Top gap must be at least 0.'),
         assert(bottomGap >= 0, 'Bottom gap must be at least 0.');
@@ -138,6 +126,22 @@ class OverlayPopupDialog extends StatefulWidget {
   ///
   final double bottomGap;
 
+  ///
+  /// The color of the barrier that appears behind the dialog.
+  /// The default value is [Colors.black.withOpacity(0.5)]
+  ///
+  final Color barrierColor;
+
+  ///
+  /// The curve of the animation. The default value is [Curves.easeInOut].
+  ///
+  final Curve curve;
+
+  ///
+  /// The duration of the animation. The default value is [kThemeAnimationDuration].
+  ///
+  final Duration animationDuration;
+
   @override
   State<OverlayPopupDialog> createState() => _OverlayPopupDialogState();
 }
@@ -186,7 +190,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   void _initializeAnimations() {
     _animationController = AnimationController(
       vsync: this,
-      duration: kThemeAnimationDuration,
+      duration: widget.animationDuration,
     );
 
     _fadeAnimation = Tween<double>(
@@ -194,7 +198,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut,
+      curve: widget.curve,
     ));
 
     _slideAnimation = _getSlideAnimation();
@@ -213,7 +217,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       end: 0.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic,
+      curve: widget.curve,
     ));
   }
 
@@ -290,7 +294,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       case OverlayLocation.bottom:
         return childPosition.dy + childSize.height + widget.bottomGap;
       case OverlayLocation.on:
-        return childPosition.dy - (overlayHeight! / 2) + childSize.height / 2;
+        return childPosition.dy + childSize.height - (overlayHeight! / 2);
       default:
         return 0;
     }
@@ -301,7 +305,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       width: [OverlayLocation.top, OverlayLocation.bottom, OverlayLocation.on]
               .contains(widget.overlayLocation)
           ? screenSize.width
-          : (screenSize.width - childSize.width) / 2,
+          : widget.overlayLocation == OverlayLocation.left
+              ? ((screenSize.width - childSize.width) / 2) - widget.leftGap
+              : ((screenSize.width - childSize.width) / 2) - widget.rightGap,
       constraints: BoxConstraints(
         maxHeight: screenSize.height * 0.8,
       ),
@@ -326,6 +332,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   Offset _getTranslationOffset() {
     final value = _slideAnimation.value;
+
     return switch (widget.animationDirection) {
       AnimationDirection.TTB => Offset(0, value),
       AnimationDirection.BTT => Offset(0, -value),
@@ -370,9 +377,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       child: GestureDetector(
         onTap: widget.barrierDismissible ? _removeOverlay : null,
         child: ColoredBox(
-          color: Theme.of(context)
-              .scaffoldBackgroundColor
-              .withOpacity(_fadeAnimation.value * 0.5),
+          color: widget.barrierColor.withOpacity(_fadeAnimation.value * 0.5),
         ),
       ),
     );
