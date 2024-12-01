@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+* Changes in documentation.
+
 ## 0.1.5
 
 * With this update, all OverlayLocation properties can now be used in conjunction with all AnimationDirection properties.

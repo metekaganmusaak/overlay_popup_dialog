@@ -69,9 +69,6 @@ final class OverlayPopupDialog extends StatefulWidget {
   /// The direction of the animation when the dialog is displayed.
   /// The default value is [AnimationDirection.TTB].
   ///
-  /// For vertical overlay locations (top/bottom), the animation direction must be TTB or BTT.
-  /// For horizontal overlay locations (left/right), the animation direction must be LTR or RTL.
-  ///
   final AnimationDirection animationDirection;
 
   ///
@@ -133,12 +130,12 @@ final class OverlayPopupDialog extends StatefulWidget {
   final Color barrierColor;
 
   ///
-  /// The curve of the animation. The default value is [Curves.easeInOut].
+  /// The curve of the animation. Default value is [Curves.easeInOut].
   ///
   final Curve curve;
 
   ///
-  /// The duration of the animation. The default value is [kThemeAnimationDuration].
+  /// The duration of the animation. Default value is [kThemeAnimationDuration].
   ///
   final Duration animationDuration;
 
