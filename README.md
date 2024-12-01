@@ -11,7 +11,7 @@ The OverlayPopupDialog widget is a widget that displays an animated and smooth o
 - Show overlay dialog on; top, bottom, left, right or on the tapped widget.
 - Customize overlay dialog as you wish.
 - Use controller to call open and close overlay functions.
-- Controler animation directions like top to bottom, left to right etc.
+- Controller animation directions like top to bottom, left to right etc.
 - Show highlighted button when overlay open.
 
 ## Getting started

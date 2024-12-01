@@ -12,7 +12,9 @@ enum OverlayLocation {
   on;
 }
 
+///
 /// Customize animation direction for the OverlayPopupDialog widget.
+///
 enum AnimationDirection {
   LTR,
   RTL,
@@ -20,7 +22,7 @@ enum AnimationDirection {
   BTT;
 }
 
-class OverlayPopupDialog extends StatefulWidget {
+final class OverlayPopupDialog extends StatefulWidget {
   const OverlayPopupDialog({
     super.key,
     required this.child,
@@ -34,22 +36,10 @@ class OverlayPopupDialog extends StatefulWidget {
     this.rightGap = 0,
     this.topGap = 0,
     this.bottomGap = 0,
-  })  : assert(
-            overlayLocation == OverlayLocation.top ||
-                    overlayLocation == OverlayLocation.bottom ||
-                    overlayLocation == OverlayLocation.on
-                ? (animationDirection == AnimationDirection.TTB ||
-                    animationDirection == AnimationDirection.BTT)
-                : true,
-            'For top/bottom overlay locations, animation direction must be TTB or BTT.'),
-        assert(
-            overlayLocation == OverlayLocation.left ||
-                    overlayLocation == OverlayLocation.right
-                ? (animationDirection == AnimationDirection.LTR ||
-                    animationDirection == AnimationDirection.RTL)
-                : true,
-            'For left/right overlay locations, animation direction must be LTR or RTL.'),
-        assert(leftGap >= 0, 'Left gap must be at least 0.'),
+    this.barrierColor = Colors.black,
+    this.curve = Curves.easeInOut,
+    this.animationDuration = kThemeAnimationDuration,
+  })  : assert(leftGap >= 0, 'Left gap must be at least 0.'),
         assert(rightGap >= 0, 'Right gap must be at least 0.'),
         assert(topGap >= 0, 'Top gap must be at least 0.'),
         assert(bottomGap >= 0, 'Bottom gap must be at least 0.');
@@ -136,19 +126,50 @@ class OverlayPopupDialog extends StatefulWidget {
   ///
   final double bottomGap;
 
+  ///
+  /// The color of the barrier that appears behind the dialog.
+  /// The default value is [Colors.black.withOpacity(0.5)]
+  ///
+  final Color barrierColor;
+
+  ///
+  /// The curve of the animation. The default value is [Curves.easeInOut].
+  ///
+  final Curve curve;
+
+  ///
+  /// The duration of the animation. The default value is [kThemeAnimationDuration].
+  ///
+  final Duration animationDuration;
+
   @override
   State<OverlayPopupDialog> createState() => _OverlayPopupDialogState();
 }
 
 class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     with SingleTickerProviderStateMixin {
+  // Animations
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
-  OverlayEntry? _overlayEntry;
 
+  // Overlays
+  OverlayEntry? _overlayEntry;
+  final GlobalKey _overlayKey = GlobalKey();
+  double? overlayHeight;
+
+  // Keys
   final GlobalKey _childKey = GlobalKey();
   final LayerLink _layerLink = LayerLink();
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _overlayEntry?.remove();
+    widget.controller?.detach();
+    widget.controller?.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -158,10 +179,18 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     _initializeAnimations();
   }
 
+  void _bindController() {
+    widget.controller?.attach();
+    widget.controller?.bindCallbacks(
+      showCallback: () => _showOverlay(context),
+      hideCallback: _removeOverlay,
+    );
+  }
+
   void _initializeAnimations() {
     _animationController = AnimationController(
       vsync: this,
-      duration: kThemeAnimationDuration,
+      duration: widget.animationDuration,
     );
 
     _fadeAnimation = Tween<double>(
@@ -169,18 +198,10 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInOut,
+      curve: widget.curve,
     ));
 
     _slideAnimation = _getSlideAnimation();
-  }
-
-  void _bindController() {
-    widget.controller?.attach();
-    widget.controller?.bindCallbacks(
-      showCallback: () => _showOverlay(context),
-      hideCallback: _removeOverlay,
-    );
   }
 
   Animation<double> _getSlideAnimation() {
@@ -196,17 +217,8 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       end: 0.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeOutCubic,
+      curve: widget.curve,
     ));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _overlayEntry?.remove();
-    widget.controller?.detach();
-    widget.controller?.dispose();
-    super.dispose();
   }
 
   void _showOverlay(BuildContext context) {
@@ -222,46 +234,111 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
         return Material(
           color: Colors.transparent,
           child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, animation) {
-                return Stack(
-                  children: [
-                    _buildBarrier(context),
-                    _buildHighlightedChild(childPosition, childSize),
+            animation: _animationController,
+            builder: (context, animation) {
+              return Stack(
+                children: [
+                  _buildBarrier(context),
+                  _buildHighlightedChild(childPosition, childSize),
+                  if ([OverlayLocation.left, OverlayLocation.right]
+                      .contains(widget.overlayLocation))
                     CompositedTransformFollower(
                       link: _layerLink,
                       followerAnchor: _getFollowerAnchor(),
                       targetAnchor: _getTargetAnchor(),
                       offset: _calculateOffset(),
-                      child: Opacity(
-                        opacity: _fadeAnimation.value,
-                        child: Transform.translate(
-                          offset: _getTranslationOffset(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: widget.overlayLocation ==
-                                          OverlayLocation.left ||
-                                      widget.overlayLocation ==
-                                          OverlayLocation.right
-                                  ? (screenSize.width - childSize.width) / 2
-                                  : screenSize.width,
-                              maxHeight: screenSize.height * 0.8,
-                            ),
-                            child: widget.dialogChild,
-                          ),
-                        ),
+                      child: _buildOverlayContent(screenSize, childSize),
+                    )
+                  else
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: _calculateOverlayPosition(childPosition, childSize),
+                      child: Container(
+                        key: _overlayKey,
+                        child: _buildOverlayContent(screenSize, childSize),
                       ),
                     ),
-                  ],
-                );
-              }),
+                ],
+              );
+            },
+          ),
         );
       },
     );
 
     Overlay.of(context).insert(_overlayEntry!);
 
+    _calculateOverlayHeight();
+
     _animationController.forward();
+  }
+
+  void _calculateOverlayHeight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final overlayRenderBox =
+          _overlayKey.currentContext?.findRenderObject() as RenderBox?;
+      if (overlayRenderBox != null && _overlayEntry != null) {
+        overlayHeight = overlayRenderBox.size.height;
+        _overlayEntry!.markNeedsBuild();
+      }
+    });
+  }
+
+  double _calculateOverlayPosition(Offset childPosition, Size childSize) {
+    overlayHeight ??= 0;
+
+    switch (widget.overlayLocation) {
+      case OverlayLocation.top:
+        return childPosition.dy - overlayHeight! - widget.topGap;
+      case OverlayLocation.bottom:
+        return childPosition.dy + childSize.height + widget.bottomGap;
+      case OverlayLocation.on:
+        return childPosition.dy + childSize.height - (overlayHeight! / 2);
+      default:
+        return 0;
+    }
+  }
+
+  Widget _buildOverlayContent(Size screenSize, Size childSize) {
+    Widget content = Container(
+      width: [OverlayLocation.top, OverlayLocation.bottom, OverlayLocation.on]
+              .contains(widget.overlayLocation)
+          ? screenSize.width
+          : widget.overlayLocation == OverlayLocation.left
+              ? ((screenSize.width - childSize.width) / 2) - widget.leftGap
+              : ((screenSize.width - childSize.width) / 2) - widget.rightGap,
+      constraints: BoxConstraints(
+        maxHeight: screenSize.height * 0.8,
+      ),
+      child: widget.dialogChild,
+    );
+
+    if (widget.overlayLocation == OverlayLocation.on) {
+      content = Transform.translate(
+        offset: Offset(0, -childSize.height / 2),
+        child: content,
+      );
+    }
+
+    return Opacity(
+      opacity: _fadeAnimation.value,
+      child: Transform.translate(
+        offset: _getTranslationOffset(),
+        child: content,
+      ),
+    );
+  }
+
+  Offset _getTranslationOffset() {
+    final value = _slideAnimation.value;
+
+    return switch (widget.animationDirection) {
+      AnimationDirection.TTB => Offset(0, value),
+      AnimationDirection.BTT => Offset(0, -value),
+      AnimationDirection.LTR => Offset(value, 0),
+      AnimationDirection.RTL => Offset(-value, 0),
+    };
   }
 
   Alignment _getFollowerAnchor() {
@@ -295,24 +372,12 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     return gap;
   }
 
-  Offset _getTranslationOffset() {
-    final value = _slideAnimation.value;
-    return switch (widget.animationDirection) {
-      AnimationDirection.TTB => Offset(0, value),
-      AnimationDirection.BTT => Offset(0, -value),
-      AnimationDirection.LTR => Offset(value, 0),
-      AnimationDirection.RTL => Offset(-value, 0),
-    };
-  }
-
   Widget _buildBarrier(context) {
     return SizedBox.expand(
       child: GestureDetector(
         onTap: widget.barrierDismissible ? _removeOverlay : null,
         child: ColoredBox(
-          color: Theme.of(context)
-              .scaffoldBackgroundColor
-              .withOpacity(_fadeAnimation.value * 0.5),
+          color: widget.barrierColor.withOpacity(_fadeAnimation.value * 0.5),
         ),
       ),
     );
