@@ -80,14 +80,16 @@ class _HomePageState extends State<HomePage> {
           Align(
             alignment: Alignment.center,
             child: OverlayPopupDialog(
-              highlightChildOnBarrier: true,
-              highlightBorderRadius:
-                  const BorderRadius.all(Radius.circular(16)),
+              controller: _overlayController,
+              highlightChildOnBarrier: false,
+              scaleBegin: 0.1,
+              triggerWithLongPress: true,
+              highlightBorderRadius: const BorderRadius.all(
+                Radius.circular(16),
+              ),
               highlightPadding: 4,
               overlayLocation: OverlayLocation.top,
-              animationDirection: AnimationDirection.TTB,
               animationDuration: const Duration(seconds: 1),
-              animationType: AnimationType.fade,
               dialogChild: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -132,7 +134,9 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  _overlayController.show();
+                },
                 child: Text(selectedCategories.isEmpty
                     ? 'Filter Categories'
                     : 'Filtered Categories (${selectedCategories.length})'),

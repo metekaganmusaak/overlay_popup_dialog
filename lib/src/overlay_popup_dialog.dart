@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:overlay_popup_dialog/src/overlay_popup_dialog_controller.dart';
 
 ///
@@ -13,17 +12,9 @@ enum OverlayLocation {
   left,
   right,
   on,
-  auto;
-}
 
-///
-/// Customize animation direction for the OverlayPopupDialog widget.
-///
-enum AnimationDirection {
-  LTR,
-  RTL,
-  TTB,
-  BTT;
+  /// Auto position the overlay based on the child's position and size.
+  auto;
 }
 
 ///
@@ -37,60 +28,72 @@ enum AnimationType {
   slideWithScale;
 }
 
+/// A highly customizable overlay dialog widget that appears relative to a child widget.
+///
+/// This widget creates a popup dialog that can be positioned in relation to its child widget.
+/// It supports various animations, barrier effects, and positioning options.
+///
+/// Example usage:
+/// ```dart
+/// OverlayPopupDialog(
+///   child: ElevatedButton(
+///     onPressed: () {},
+///     child: Text('Show Overlay'),
+///   ),
+///   dialogChild: Container(
+///     padding: EdgeInsets.all(16),
+///     child: Text('Overlay Content'),
+///   ),
+///   overlayLocation: OverlayLocation.bottom,
+///   highlightChildOnBarrier: true,
+/// )
+/// ```
 final class OverlayPopupDialog extends StatefulWidget {
+  /// Creates an overlay popup dialog.
+  ///
+  /// The [child] is the widget that triggers the overlay.
+  /// The [dialogChild] is the content to be shown in the overlay.
+  ///
+  /// Use [overlayLocation] to control where the overlay appears relative to the child.
+  /// Set [highlightChildOnBarrier] to true to create a "spotlight" effect on the child.
   const OverlayPopupDialog({
     super.key,
     required this.child,
     required this.dialogChild,
-    this.overlayLocation = OverlayLocation.bottom,
-    this.animationDirection = AnimationDirection.TTB,
+    this.overlayLocation = OverlayLocation.auto,
     this.barrierDismissible = true,
     this.controller,
     this.highlightChildOnBarrier = false,
-    this.highlightPadding = 4.0,
+    this.highlightPadding = 0.0,
     this.highlightBorderRadius = BorderRadius.zero,
-    this.leftGap = 0,
-    this.rightGap = 0,
-    this.topGap = 0,
-    this.bottomGap = 0,
+    this.padding = EdgeInsets.zero,
     this.barrierColor = Colors.black,
     this.curve = Curves.easeInOut,
     this.animationDuration = kThemeAnimationDuration,
     this.triggerWithLongPress = false,
     this.animationType = AnimationType.slideWithFade,
     this.scaleBegin = 0.8,
-  })  : assert(leftGap >= 0, 'Left gap must be at least 0.'),
-        assert(rightGap >= 0, 'Right gap must be at least 0.'),
-        assert(topGap >= 0, 'Top gap must be at least 0.'),
-        assert(bottomGap >= 0, 'Bottom gap must be at least 0.'),
-        assert(highlightPadding >= 0, 'Highlight padding must be at least 0.');
+  }) : assert(highlightPadding >= 0, 'Highlight padding must be at least 0.');
 
   ///
   /// The widget that will be wrapped by the OverlayPopupDialog. It can be
   /// any widget. Preferably a non-interactive widget like a Container or a Text widget.
-  /// If you want to use a widget that has an onTap property, you need to assign
-  /// [OverlayPopupDialogController] to the controller property to control the visibility
-  /// of the dialog.
+  /// Also you can use a widget that has an onTap property like buttons, chips etc.
   ///
   final Widget child;
 
   ///
   /// The widget that will be displayed in the overlay dialog. It can
-  /// be ListView, Column, Row etc.
+  /// be ListView, Column, Row etc. Default height is child's height. Maximum
+  /// height is the space between the child and the top, left, right or bottom of the screen.
   ///
   final Widget dialogChild;
 
   ///
   /// The position of the dialog relative to the child widget.
-  /// The default value is [OverlayLocation.bottom].
+  /// The default value is [OverlayLocation.auto].
   ///
   final OverlayLocation overlayLocation;
-
-  ///
-  /// The direction of the animation when the dialog is displayed.
-  /// The default value is [AnimationDirection.TTB].
-  ///
-  final AnimationDirection animationDirection;
 
   ///
   /// A boolean value that determines whether the dialog can be
@@ -119,38 +122,15 @@ final class OverlayPopupDialog extends StatefulWidget {
   /// Default value is [BorderRadius.zero].
   final BorderRadius highlightBorderRadius;
 
+  /// The padding between the dialog and the child widget.
+  /// Use this to control the spacing around the dialog.
   ///
-  /// The gap between the dialog and the left side of the tapped widget, child.
-  /// Default value is [0.0].
-  ///
-  /// If you want to see changes, you need to set OverlayLocation property to
-  /// [OverlayLocation.left].
-  ///
-  final double leftGap;
-
-  ///
-  /// The gap between the dialog and the right side of the tapped widget, child.
-  /// Default value is [0.0].
-  /// If you want to see changes, you need to set OverlayLocation property to
-  /// [OverlayLocation.right].
-  ///
-  final double rightGap;
-
-  ///
-  /// The gap between the dialog and the top side of the tapped widget, child.
-  /// Default value is [0.0].
-  /// If you want to see changes, you need to set OverlayLocation property to
-  /// [OverlayLocation.top].
-  ///
-  final double topGap;
-
-  ///
-  /// The gap between the dialog and the bottom side of the tapped widget, child.
-  /// Default value is [0.0].
-  /// If you want to see changes, you need to set OverlayLocation property to
-  /// [OverlayLocation.bottom].
-  ///
-  final double bottomGap;
+  /// Example:
+  /// ```dart
+  /// padding: EdgeInsets.only(top: 8), // Adds space above the dialog
+  /// padding: EdgeInsets.all(16), // Adds space around all sides
+  /// ```
+  final EdgeInsets padding;
 
   ///
   /// The color of the barrier that appears behind the dialog.
@@ -170,7 +150,9 @@ final class OverlayPopupDialog extends StatefulWidget {
 
   ///
   /// A boolean value that determines whether the dialog will be triggered
-  /// with a long press. The default value is [false].
+  /// with a long press. The default value is [false]. If controller attached
+  /// to the dialog, this property will be ignored. But you can create your
+  /// custom onLongPress callback to trigger the dialog.
   ///
   final bool triggerWithLongPress;
 
@@ -211,10 +193,15 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   // Variables
   Timer? _longPressTimer;
-  bool _isLongPressing = false;
 
-  // Yeni değişken ekleyelim
-  final _childSizeNotifier = ChangeNotifier();
+  Offset? _touchStartPosition;
+
+  // Add ValueNotifier for overlay dimensions
+  late final ValueNotifier<Size?> _overlaySizeNotifier = ValueNotifier(null);
+
+  // Cache calculated positions
+  late final ValueNotifier<Offset?> _lastCalculatedPosition =
+      ValueNotifier(null);
 
   @override
   void initState() {
@@ -234,13 +221,13 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   @override
   void dispose() {
-    _animationController.stop();
+    _overlaySizeNotifier.dispose();
+    _lastCalculatedPosition.dispose();
     _animationController.dispose();
     _overlayEntry?.remove();
     _overlayEntry = null;
     _longPressTimer?.cancel();
     widget.controller?.detach();
-    _childSizeNotifier.dispose();
     super.dispose();
   }
 
@@ -278,19 +265,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       curve: Interval(0.1, 0.8, curve: widget.curve),
     ));
 
-    _slideAnimation = _getSlideAnimation();
-  }
-
-  Animation<double> _getSlideAnimation() {
-    final double begin = switch (widget.animationDirection) {
-      AnimationDirection.LTR => -50.0,
-      AnimationDirection.RTL => 50.0,
-      AnimationDirection.TTB => -50.0,
-      AnimationDirection.BTT => 50.0,
-    };
-
-    return Tween<double>(
-      begin: begin,
+    // Update slide animation based on overlay location
+    _slideAnimation = Tween<double>(
+      begin: -50.0,
       end: 0.0,
     ).animate(CurvedAnimation(
       parent: _animationController,
@@ -307,7 +284,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     try {
       _overlayEntry = OverlayEntry(
         builder: (context) {
-          // Her frame sonunda child'ın boyutunu kontrol et
+          // Remove child controllers
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_overlayEntry != null && mounted) {
               _overlayEntry!.markNeedsBuild();
@@ -380,12 +357,11 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
         },
       );
 
-      // Normal overlay insert'i kullanalım
       Overlay.of(context).insert(_overlayEntry!);
       _calculateOverlayHeight();
       _animationController.forward();
     } catch (e) {
-      print('OverlayPopupDialog error: $e');
+      debugPrint('Error showing overlay: $e');
       _overlayEntry?.remove();
       _overlayEntry = null;
     }
@@ -396,16 +372,13 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       final overlayRenderBox =
           _overlayKey.currentContext?.findRenderObject() as RenderBox?;
       if (overlayRenderBox != null && _overlayEntry != null && mounted) {
-        final newHeight = overlayRenderBox.size.height;
-        final newWidth = overlayRenderBox.size.width;
+        final newSize = overlayRenderBox.size;
 
-        // Boyut değişmişse güncelle
-        if (overlayHeight != newHeight || overlayWidth != newWidth) {
-          // Önce yeni boyutları kaydet
-          overlayHeight = newHeight;
-          overlayWidth = newWidth;
+        // Only update if size actually changed
+        if (_overlaySizeNotifier.value?.height != newSize.height ||
+            _overlaySizeNotifier.value?.width != newSize.width) {
+          _overlaySizeNotifier.value = newSize;
 
-          // Overlay'i yeniden build et
           if (mounted) {
             _overlayEntry!.markNeedsBuild();
           }
@@ -419,15 +392,12 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
     switch (widget.overlayLocation) {
       case OverlayLocation.top:
-        // Dialog'un alt kısmı child'ın üst kısmına gelecek şekilde konumlandır
-        return childPosition.dy - overlayHeight! - widget.topGap;
+        return childPosition.dy - overlayHeight! - widget.padding.top;
 
       case OverlayLocation.bottom:
-        // Dialog'un üst kısmı child'ın alt kısmına gelecek şekilde konumlandır
-        return childPosition.dy + childSize.height + widget.bottomGap;
+        return childPosition.dy + childSize.height + widget.padding.bottom;
 
       case OverlayLocation.on:
-        // Dialog'un merkezi child'ın merkezine gelecek şekilde konumlandır
         return childPosition.dy + (childSize.height / 2) - (overlayHeight! / 2);
 
       case OverlayLocation.auto:
@@ -438,9 +408,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
         );
         return switch (bestPosition) {
           OverlayLocation.top =>
-            childPosition.dy - overlayHeight! - widget.topGap,
+            childPosition.dy - overlayHeight! - widget.padding.top,
           OverlayLocation.bottom =>
-            childPosition.dy + childSize.height + widget.bottomGap,
+            childPosition.dy + childSize.height + widget.padding.bottom,
           OverlayLocation.on =>
             childPosition.dy + (childSize.height / 2) - (overlayHeight! / 2),
           _ => 0,
@@ -454,7 +424,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       Size screenSize, Size childSize, Offset childPosition) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Her layout değişikliğinde overlay boyutunu kontrol et
+        // Check overlay size on every layout change
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final overlayRenderBox =
               _overlayKey.currentContext?.findRenderObject() as RenderBox?;
@@ -479,16 +449,16 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
         Widget content = Container(
           width: switch (widget.overlayLocation) {
-            OverlayLocation.left => childPosition.dx - widget.leftGap,
+            OverlayLocation.left => childPosition.dx - widget.padding.left,
             OverlayLocation.right => screenSize.width -
-                (childPosition.dx + childSize.width + widget.rightGap),
+                (childPosition.dx + childSize.width + widget.padding.right),
             _ => null,
           },
           constraints: BoxConstraints(
             maxWidth: switch (widget.overlayLocation) {
-              OverlayLocation.left => childPosition.dx - widget.leftGap,
+              OverlayLocation.left => childPosition.dx - widget.padding.left,
               OverlayLocation.right => screenSize.width -
-                  (childPosition.dx + childSize.width + widget.rightGap),
+                  (childPosition.dx + childSize.width + widget.padding.right),
               _ => screenSize.width * 0.9,
             },
             maxHeight: _calculateMaxAvailableSpace(
@@ -503,7 +473,7 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     );
   }
 
-  // Maksimum kullanılabilir alanı hesaplayan yardımcı metod
+  // Calculate maximum available space
   Size _calculateMaxAvailableSpace(
     Size screenSize,
     Size childSize,
@@ -518,25 +488,25 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       case OverlayLocation.top:
         return Size(
           screenSize.width,
-          // Top position için child ile AppBar arasındaki mesafeyi kullan
-          childPosition.dy - topLimit - widget.topGap,
+          // Use the distance between child and AppBar for top position
+          childPosition.dy - topLimit - widget.padding.top,
         );
       case OverlayLocation.bottom:
         return Size(
           screenSize.width,
           screenSize.height -
-              (childPosition.dy + childSize.height + widget.bottomGap) -
+              (childPosition.dy + childSize.height + widget.padding.bottom) -
               padding.bottom,
         );
       case OverlayLocation.left:
         return Size(
-          childPosition.dx - widget.leftGap - padding.left,
+          childPosition.dx - widget.padding.left - padding.left,
           screenSize.height - topLimit - padding.bottom,
         );
       case OverlayLocation.right:
         return Size(
           screenSize.width -
-              (childPosition.dx + childSize.width + widget.rightGap) -
+              (childPosition.dx + childSize.width + widget.padding.right) -
               padding.right,
           screenSize.height - topLimit - padding.bottom,
         );
@@ -551,61 +521,68 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
 
   Widget _buildAnimatedContent(Widget child) {
     return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, _) {
-          Widget content = child;
+      child: ValueListenableBuilder<Size?>(
+        valueListenable: _overlaySizeNotifier,
+        builder: (context, size, _) {
+          if (size == null) return child;
 
-          switch (widget.animationType) {
-            case AnimationType.fade:
-              content = FadeTransition(
-                opacity: _fadeAnimation,
-                child: child,
-              );
-              break;
+          return AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, _) {
+              Widget content = child;
 
-            case AnimationType.scale:
-              content = ScaleTransition(
-                scale: _scaleAnimation,
-                alignment: _getAnimationAlignment(),
-                child: child,
-              );
-              break;
+              switch (widget.animationType) {
+                case AnimationType.fade:
+                  content = FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: child,
+                  );
+                  break;
 
-            case AnimationType.slideWithFade:
-              content = FadeTransition(
-                opacity: _fadeAnimation,
-                child: Transform.translate(
-                  offset: _getTranslationOffset(),
-                  child: child,
-                ),
-              );
-              break;
+                case AnimationType.scale:
+                  content = ScaleTransition(
+                    scale: _scaleAnimation,
+                    alignment: _getAnimationAlignment(),
+                    child: child,
+                  );
+                  break;
 
-            case AnimationType.scaleWithFade:
-              content = FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  alignment: _getAnimationAlignment(),
-                  child: child,
-                ),
-              );
-              break;
+                case AnimationType.slideWithFade:
+                  content = FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Transform.translate(
+                      offset: _getTranslationOffset(),
+                      child: child,
+                    ),
+                  );
+                  break;
 
-            case AnimationType.slideWithScale:
-              content = ScaleTransition(
-                scale: _scaleAnimation,
-                alignment: _getAnimationAlignment(),
-                child: Transform.translate(
-                  offset: _getTranslationOffset(),
-                  child: child,
-                ),
-              );
-              break;
-          }
+                case AnimationType.scaleWithFade:
+                  content = FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      alignment: _getAnimationAlignment(),
+                      child: child,
+                    ),
+                  );
+                  break;
 
-          return content;
+                case AnimationType.slideWithScale:
+                  content = ScaleTransition(
+                    scale: _scaleAnimation,
+                    alignment: _getAnimationAlignment(),
+                    child: Transform.translate(
+                      offset: _getTranslationOffset(),
+                      child: child,
+                    ),
+                  );
+                  break;
+              }
+
+              return content;
+            },
+          );
         },
       ),
     );
@@ -614,11 +591,12 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
   Offset _getTranslationOffset() {
     final value = _slideAnimation.value;
 
-    return switch (widget.animationDirection) {
-      AnimationDirection.TTB => Offset(0, value),
-      AnimationDirection.BTT => Offset(0, -value),
-      AnimationDirection.LTR => Offset(value, 0),
-      AnimationDirection.RTL => Offset(-value, 0),
+    return switch (widget.overlayLocation) {
+      OverlayLocation.top => Offset(0, value),
+      OverlayLocation.bottom => Offset(0, -value),
+      OverlayLocation.left => Offset(value, 0),
+      OverlayLocation.right => Offset(-value, 0),
+      _ => Offset(0, -value), // Default for 'on' and 'auto'
     };
   }
 
@@ -638,51 +616,94 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     };
   }
 
+  /// Builds the barrier with highlight effect if enabled
+  /// [childPosition] represents the global position of the child widget
+  /// [childSize] represents the size of the child widget
   Widget _buildBarrier(context, Offset childPosition, Size childSize) {
+    // Cache the barrier color with opacity
+    final barrierColorWithOpacity = widget.barrierColor.withValues(
+      alpha: _fadeAnimation.value * 0.5,
+    );
+
     if (!widget.highlightChildOnBarrier) {
       return SizedBox.expand(
         child: GestureDetector(
           onTap: widget.barrierDismissible ? _removeOverlay : null,
           child: ColoredBox(
-            color: widget.barrierColor.withOpacity(_fadeAnimation.value * 0.5),
+            color: barrierColorWithOpacity,
           ),
         ),
       );
     }
 
-    return Stack(
-      children: [
-        // Tam ekran barrier
-        ColoredBox(
-          color: widget.barrierColor.withOpacity(_fadeAnimation.value * 0.5),
-          child: const SizedBox.expand(),
-        ),
+    // Cache section calculations
+    final topHeight = childPosition.dy - widget.highlightPadding;
+    final sectionHeight = childSize.height + (widget.highlightPadding * 2);
+    final leftWidth = childPosition.dx - widget.highlightPadding;
 
-        // Highlight alanı
-        Positioned(
-          top: childPosition.dy - widget.highlightPadding,
-          left: childPosition.dx - widget.highlightPadding,
-          width: childSize.width + (widget.highlightPadding * 2),
-          height: childSize.height + (widget.highlightPadding * 2),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
-              borderRadius: widget.highlightBorderRadius,
+    return RepaintBoundary(
+      child: Stack(
+        children: [
+          // Barrier sections
+          Stack(
+            children: [
+              // Top section
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: topHeight,
+                child: _buildBarrierSection(),
+              ),
+              // Left section
+              Positioned(
+                top: topHeight,
+                left: 0,
+                width: leftWidth,
+                height: sectionHeight,
+                child: _buildBarrierSection(),
+              ),
+              // Right section
+              Positioned(
+                top: topHeight,
+                left: childPosition.dx +
+                    childSize.width +
+                    widget.highlightPadding,
+                right: 0,
+                height: sectionHeight,
+                child: _buildBarrierSection(),
+              ),
+              // Bottom section
+              Positioned(
+                top: topHeight + sectionHeight,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildBarrierSection(),
+              ),
+            ],
+          ),
+
+          // Gesture detector for barrier
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: widget.barrierDismissible ? _removeOverlay : null,
+              behavior: HitTestBehavior.opaque,
+              child: const ColoredBox(
+                color: Colors.transparent,
+              ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
 
-        // Barrier için gesture detector
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: widget.barrierDismissible ? _removeOverlay : null,
-            behavior: HitTestBehavior.opaque,
-            child: const ColoredBox(
-              color: Colors.transparent,
-            ),
-          ),
-        ),
-      ],
+  Widget _buildBarrierSection() {
+    return ColoredBox(
+      color: widget.barrierColor.withValues(
+        alpha: _fadeAnimation.value * 0.5,
+      ),
     );
   }
 
@@ -694,56 +715,18 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       _overlayEntry?.remove();
       _overlayEntry = null;
     } catch (e) {
-      print('Error removing overlay: $e');
+      debugPrint('Error removing overlay: $e');
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: Listener(
-        key: widget.key,
-        onPointerDown: (details) {
-          if (widget.controller == null) {
-            if (widget.triggerWithLongPress) {
-              _isLongPressing = true;
-              _longPressTimer = Timer(const Duration(milliseconds: 300), () {
-                if (_isLongPressing) {
-                  _showOverlay(context);
-                }
-              });
-            } else {
-              _showOverlay(context);
-            }
-          }
-        },
-        onPointerUp: (details) {
-          if (widget.controller == null && widget.triggerWithLongPress) {
-            _longPressTimer?.cancel();
-            _isLongPressing = false;
-          }
-        },
-        onPointerCancel: (details) {
-          if (widget.controller == null && widget.triggerWithLongPress) {
-            _longPressTimer?.cancel();
-            _isLongPressing = false;
-          }
-        },
-        child: Focus(
-          key: _childKey,
-          child: widget.child,
-        ),
-      ),
-    );
-  }
-
+  /// Calculates the best position for the overlay based on available space
+  /// Takes into account screen edges, safe area, and app bar height
   OverlayLocation _calculateBestPosition(
     Offset childPosition,
     Size childSize,
     Size screenSize,
   ) {
-    // Get SafeArea padding and AppBar height
+    // Calculate safe area and app bar constraints
     final EdgeInsets padding = MediaQuery.viewPaddingOf(context);
     final double appBarHeight = AppBar().preferredSize.height;
     final double topLimit = padding.top + appBarHeight;
@@ -754,13 +737,14 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     // Calculate available space for each direction considering SafeArea and AppBar
     final spaces = {
       OverlayLocation.bottom: screenSize.height -
-          (childPosition.dy + childSize.height + widget.bottomGap) -
+          (childPosition.dy + childSize.height + widget.padding.bottom) -
           padding.bottom,
-      OverlayLocation.top: childPosition.dy - topLimit - widget.topGap,
+      OverlayLocation.top: childPosition.dy - topLimit - widget.padding.top,
       OverlayLocation.right: screenSize.width -
-          (childPosition.dx + childSize.width + widget.rightGap) -
+          (childPosition.dx + childSize.width + widget.padding.right) -
           padding.right,
-      OverlayLocation.left: childPosition.dx - widget.leftGap - padding.left,
+      OverlayLocation.left:
+          childPosition.dx - widget.padding.left - padding.left,
     };
 
     // Filter directions with sufficient space
@@ -799,5 +783,59 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       OverlayLocation.on => Alignment.center,
       OverlayLocation.auto => Alignment.center,
     };
+  }
+
+  /// Handles scroll detection and prevents overlay from showing during scroll
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Listener(
+        key: widget.key,
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (details) {
+          // Store initial touch position for scroll detection
+          _touchStartPosition = details.position;
+          if (widget.controller == null && widget.triggerWithLongPress) {
+            _longPressTimer = Timer(const Duration(milliseconds: 300), () {
+              if (_touchStartPosition != null) {
+                _showOverlay(context);
+              }
+            });
+          }
+        },
+        onPointerMove: (details) {
+          // If movement is greater than threshold, consider it a scroll
+          if (_touchStartPosition != null) {
+            final distance = (details.position - _touchStartPosition!).distance;
+            if (distance > 10) {
+              // 10px threshold for scroll detection
+              _touchStartPosition = null;
+              _longPressTimer?.cancel();
+            }
+          }
+        },
+        onPointerUp: (details) {
+          if (_touchStartPosition != null) {
+            final distance = (details.position - _touchStartPosition!).distance;
+            if (distance < 10) {
+              if (widget.controller == null && !widget.triggerWithLongPress) {
+                _showOverlay(context);
+              }
+            }
+          }
+          _touchStartPosition = null;
+          _longPressTimer?.cancel();
+        },
+        onPointerCancel: (_) {
+          _touchStartPosition = null;
+          _longPressTimer?.cancel();
+        },
+        child: Focus(
+          key: _childKey,
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }
