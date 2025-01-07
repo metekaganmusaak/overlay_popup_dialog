@@ -37,65 +37,46 @@ class OverlayPopupDialogException implements Exception {
 class OverlayPopupDialogController {
   VoidCallback? _showCallback;
   VoidCallback? _hideCallback;
-  bool _isBound = false;
+  bool _isAttached = false;
+  bool _isDisposed = false;
 
-  // Widget'a attach edildiğinde çağrılacak
   void attach() {
-    if (_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is already assigned to an OverlayPopupDialog widget. Please create a new instance for each OverlayPopupDialog widget.',
-      );
-    }
-    _isBound = true;
+    assert(!_isDisposed, 'Controller is disposed');
+    _isAttached = true;
   }
 
   void detach() {
-    _isBound = false;
+    if (_isDisposed) return;
+    _isAttached = false;
     _showCallback = null;
     _hideCallback = null;
-  }
-
-  bool show() {
-    if (!_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
-      );
-    }
-
-    if (_showCallback != null) {
-      _showCallback!();
-      return true;
-    }
-
-    throw OverlayPopupDialogException('No show callback is available.');
-  }
-
-  void close() {
-    if (!_isBound) {
-      throw OverlayPopupDialogException(
-        'This OverlayPopupDialogController is not assigned to a OverlayPopupDialog widget.',
-      );
-    }
-
-    if (_hideCallback != null) {
-      _hideCallback!();
-      return;
-    }
-
-    throw OverlayPopupDialogException(
-      'No hide callback has been bound to this OverlayPopupDialogController.',
-    );
   }
 
   void bindCallbacks({
     required VoidCallback showCallback,
     required VoidCallback hideCallback,
   }) {
+    assert(!_isDisposed, 'Controller is disposed');
+    assert(_isAttached, 'Controller is not attached');
+
     _showCallback = showCallback;
     _hideCallback = hideCallback;
   }
 
+  void show() {
+    if (!_isAttached || _isDisposed) return;
+    _showCallback?.call();
+  }
+
+  void hide() {
+    if (!_isAttached || _isDisposed) return;
+    _hideCallback?.call();
+  }
+
   void dispose() {
+    _isDisposed = true;
     detach();
   }
+
+  bool get isAttached => _isAttached && !_isDisposed;
 }

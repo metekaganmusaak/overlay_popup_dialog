@@ -23,6 +23,18 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class CategoryModel {
+  final String name;
+  final IconData icon;
+  bool isSelected;
+
+  CategoryModel({
+    required this.name,
+    required this.icon,
+    this.isSelected = false,
+  });
+}
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -32,42 +44,29 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final OverlayPopupDialogController _overlayController;
-  late final OverlayPopupDialogController _overlayController2;
 
   @override
   void initState() {
     super.initState();
     _overlayController = OverlayPopupDialogController();
-    _overlayController2 = OverlayPopupDialogController();
   }
 
   @override
   void dispose() {
     _overlayController.dispose();
-    _overlayController2.dispose();
     super.dispose();
   }
 
-  List<OverlayLocation> locations = [
-    OverlayLocation.bottom,
-    OverlayLocation.top,
-    OverlayLocation.on,
-    OverlayLocation.left,
-    OverlayLocation.right,
+  bool isTapped = false;
+
+  final List<CategoryModel> categories = [
+    CategoryModel(name: 'All', icon: Icons.all_inclusive),
+    CategoryModel(name: 'Food', icon: Icons.fastfood),
+    CategoryModel(name: 'Drink', icon: Icons.local_drink),
+    CategoryModel(name: 'Dessert', icon: Icons.icecream),
   ];
 
-  OverlayLocation selectedLocation = OverlayLocation.bottom;
-
-  List<AnimationDirection> directions = [
-    AnimationDirection.TTB,
-    AnimationDirection.BTT,
-    AnimationDirection.LTR,
-    AnimationDirection.RTL,
-  ];
-
-  AnimationDirection selectedDirection = AnimationDirection.TTB;
-
-  bool highlightChildOnBarrier = false;
+  List<CategoryModel> selectedCategories = [];
 
   @override
   Widget build(BuildContext context) {
@@ -75,134 +74,72 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('OverlayPopupDialog Playground'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ExpansionTile(
-              title: Text('Overlay Location: ${selectedLocation.toString()}'),
-              children: [
-                for (final location in locations)
-                  RadioListTile(
-                    value: location,
-                    dense: true,
-                    groupValue: selectedLocation,
-                    title: Text(location.toString()),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() {
-                          selectedLocation = v;
-                        });
-                      }
-                    },
-                  ),
-              ],
-            ),
-            ExpansionTile(
-              title:
-                  Text('Animation Direction: ${selectedDirection.toString()}'),
-              children: [
-                for (final direction in directions)
-                  RadioListTile(
-                    dense: true,
-                    value: direction,
-                    groupValue: selectedDirection,
-                    title: Text(direction.toString()),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => selectedDirection = direction);
-                      }
-                    },
-                  ),
-              ],
-            ),
-            ExpansionTile(
-              title:
-                  Text('Highlight Child On Barrier: $highlightChildOnBarrier'),
-              children: [
-                SwitchListTile(
-                  value: highlightChildOnBarrier,
-                  dense: true,
-                  onChanged: (v) {
-                    setState(() => highlightChildOnBarrier = v);
-                  },
-                  title: Text(highlightChildOnBarrier
-                      ? 'Highlight ON'
-                      : 'Highlight OFF'),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: OverlayPopupDialog(
-                controller: _overlayController,
-                overlayLocation: selectedLocation,
-                animationDirection: selectedDirection,
-                highlightChildOnBarrier: highlightChildOnBarrier,
-                dialogChild: _DialogWidget(onClose: _overlayController.close),
-                child: InkWell(
-                  onTap: () {
-                    _overlayController.show();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text('With Controller & Not Tappable Child'),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 64),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DialogWidget extends StatelessWidget {
-  final VoidCallback? onClose;
-
-  const _DialogWidget({
-    super.key,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Colors.blue[100],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'Dialog Title',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const Divider(),
-          Text(
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          if (onClose != null)
-            Align(
-              alignment: Alignment.bottomRight,
-              child: ElevatedButton(
-                onPressed: onClose,
-                child: const Text('Close'),
+          Align(
+            alignment: Alignment.center,
+            child: OverlayPopupDialog(
+              highlightChildOnBarrier: true,
+              highlightBorderRadius:
+                  const BorderRadius.all(Radius.circular(16)),
+              highlightPadding: 4,
+              overlayLocation: OverlayLocation.top,
+              animationDirection: AnimationDirection.TTB,
+              animationDuration: const Duration(seconds: 1),
+              animationType: AnimationType.fade,
+              dialogChild: Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).dialogBackgroundColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 8,
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      'Filter Categories',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ...categories.map(
+                          (category) => ChoiceChip(
+                            label: Text(category.name),
+                            selected: category.isSelected,
+                            onSelected: (value) {
+                              setState(() {
+                                category.isSelected = value;
+                                if (!selectedCategories.contains(category)) {
+                                  selectedCategories.add(category);
+                                } else {
+                                  selectedCategories.remove(category);
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    ...selectedCategories
+                        .map((category) => Text(category.name)),
+                    const SizedBox(height: 16)
+                  ],
+                ),
+              ),
+              child: OutlinedButton(
+                onPressed: () {},
+                child: Text(selectedCategories.isEmpty
+                    ? 'Filter Categories'
+                    : 'Filtered Categories (${selectedCategories.length})'),
               ),
             ),
+          ),
+          ...selectedCategories.map((category) => Text(category.name)),
         ],
       ),
     );
