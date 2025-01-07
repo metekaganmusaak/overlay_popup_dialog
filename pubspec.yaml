@@ -17,3 +17,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
 
 flutter:
+
+screenshots:
+  - description: "Package Logo"
+    path: assets/logo.png
