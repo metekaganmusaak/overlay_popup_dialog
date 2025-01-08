@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+
+- Updated README.md with improved examples and descriptions
+
 ## 2.0.0
 
 ### Breaking Changes
