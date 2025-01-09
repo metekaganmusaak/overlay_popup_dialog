@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.2
+
+- Fixed overlay size calculation issue.
+
 ## 2.0.1
 
 - Updated README.md with improved examples and descriptions

@@ -1,6 +1,6 @@
 name: overlay_popup_dialog
 description: Easily position custom dialogs relative to any widget. Easy to use for every platform.
-version: 2.0.1
+version: 2.0.2
 homepage: https://github.com/metekaganmusaak/overlay_popup_dialog
 
 environment:

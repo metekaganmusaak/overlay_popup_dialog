@@ -282,15 +282,9 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
     _overlayEntry = null;
 
     try {
+      // Overlay'i oluştur
       _overlayEntry = OverlayEntry(
         builder: (context) {
-          // Remove child controllers
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_overlayEntry != null && mounted) {
-              _overlayEntry!.markNeedsBuild();
-            }
-          });
-
           return LayoutBuilder(
             builder: (context, constraints) {
               final renderBox =
@@ -312,42 +306,46 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
                 color: Colors.transparent,
                 child: AnimatedBuilder(
                   animation: _animationController,
-                  builder: (context, animation) {
-                    return Stack(
-                      children: [
-                        _buildBarrier(context, childPosition, childSize),
-                        if ([OverlayLocation.left, OverlayLocation.right]
-                            .contains(effectiveLocation))
-                          CompositedTransformFollower(
-                            link: _layerLink,
-                            followerAnchor: _getFollowerAnchor(),
-                            targetAnchor: _getTargetAnchor(),
-                            child: _buildOverlayContent(
-                                screenSize, childSize, childPosition),
-                          )
-                        else
-                          Positioned(
-                            left: widget.overlayLocation == OverlayLocation.on
-                                ? childPosition.dx + (childSize.width / 2)
-                                : 0,
-                            right: widget.overlayLocation == OverlayLocation.on
-                                ? null
-                                : 0,
-                            top: _calculateOverlayPosition(
-                                childPosition, childSize),
-                            child: Container(
-                              key: _overlayKey,
-                              transform: widget.overlayLocation ==
-                                          OverlayLocation.on &&
-                                      overlayWidth != null
-                                  ? Matrix4.translationValues(
-                                      -overlayWidth! / 2, 0, 0)
-                                  : null,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _fadeAnimation.value,
+                      child: Stack(
+                        children: [
+                          _buildBarrier(context, childPosition, childSize),
+                          if ([OverlayLocation.left, OverlayLocation.right]
+                              .contains(effectiveLocation))
+                            CompositedTransformFollower(
+                              link: _layerLink,
+                              followerAnchor: _getFollowerAnchor(),
+                              targetAnchor: _getTargetAnchor(),
                               child: _buildOverlayContent(
                                   screenSize, childSize, childPosition),
+                            )
+                          else
+                            Positioned(
+                              left: widget.overlayLocation == OverlayLocation.on
+                                  ? childPosition.dx + (childSize.width / 2)
+                                  : 0,
+                              right:
+                                  widget.overlayLocation == OverlayLocation.on
+                                      ? null
+                                      : 0,
+                              top: _calculateOverlayPosition(
+                                  childPosition, childSize),
+                              child: Container(
+                                key: _overlayKey,
+                                transform: widget.overlayLocation ==
+                                            OverlayLocation.on &&
+                                        overlayWidth != null
+                                    ? Matrix4.translationValues(
+                                        -overlayWidth! / 2, 0, 0)
+                                    : null,
+                                child: _buildOverlayContent(
+                                    screenSize, childSize, childPosition),
+                              ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -358,8 +356,14 @@ class _OverlayPopupDialogState extends State<OverlayPopupDialog>
       );
 
       Overlay.of(context).insert(_overlayEntry!);
-      _calculateOverlayHeight();
-      _animationController.forward();
+
+      // Wait for the overlay to be inserted and then calculate the height
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _calculateOverlayHeight();
+
+        _animationController.forward();
+      });
     } catch (e) {
       debugPrint('Error showing overlay: $e');
       _overlayEntry?.remove();

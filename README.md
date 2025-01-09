@@ -2,7 +2,6 @@
 
 The OverlayPopupDialog widget is a widget that displays an animated and smooth overlay relative to the clicked widget, positioning it above, below, left, right or on top of it.
 
-
 [You can test this package on web by clicking here!](https://metekaganmusaak.github.io/packages/overlay_popup_dialog)
 
 ![opd](https://github.com/user-attachments/assets/c436caa9-265a-49e7-b45f-e2077eec7b95)
@@ -58,9 +57,6 @@ Then wrap your widget with OverlayPopupDialog like below.
    highlightChildOnBarrier = false,
    scaleBegin = 0.1,
    triggerWithLongPress = true,
-   highlightBorderRadius = const BorderRadius.all(
-     Radius.circular(16),
-   ),
    highlightPadding = 4,
    overlayLocation = OverlayLocation.top,
    animationDuration = const Duration(seconds: 1),
